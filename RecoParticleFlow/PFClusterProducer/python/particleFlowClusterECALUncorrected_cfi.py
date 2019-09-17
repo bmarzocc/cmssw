@@ -5,7 +5,7 @@ from .particleFlowCaloResolution_cfi import _timeResolutionECALBarrel, _timeReso
 
 #### PF CLUSTER ECAL ####
 
-#cleaning
+#cleaning, not used
 _spikeAndDoubleSpikeCleaner_ECAL = cms.PSet(
     algoName = cms.string("SpikeAndDoubleSpikeCleaner"),    
     cleaningByDetector = cms.VPSet(
@@ -34,16 +34,25 @@ _spikeAndDoubleSpikeCleaner_ECAL = cms.PSet(
     )
 )
 
+
+# new cleaning - crystal-dependent seeding thresholds
+_seedCleaner_ECAL = cms.PSet(
+     algoName = cms.string("ECALPFSeedCleaner"),
+)
+
 #seeding
 _localMaxSeeds_ECAL = cms.PSet(
     algoName = cms.string("LocalMaximumSeedFinder"),
     thresholdsByDetector = cms.VPSet(
     cms.PSet( detector = cms.string("ECAL_ENDCAP"),
-              seedingThreshold = cms.double(0.60),
-              seedingThresholdPt = cms.double(0.15)
+              #seedingThreshold = cms.double(0.60),
+              seedingThreshold = cms.double(0.0),
+              #seedingThresholdPt = cms.double(0.15)
+              seedingThresholdPt = cms.double(0.0)
               ),
     cms.PSet( detector = cms.string("ECAL_BARREL"),
-              seedingThreshold = cms.double(0.23),
+              #seedingThreshold = cms.double(0.23),
+              seedingThreshold = cms.double(0.0),
               seedingThresholdPt = cms.double(0.0)
               )
     ),
@@ -55,11 +64,13 @@ _topoClusterizer_ECAL = cms.PSet(
     algoName = cms.string("Basic2DGenericTopoClusterizer"),
     thresholdsByDetector = cms.VPSet(
     cms.PSet( detector = cms.string("ECAL_BARREL"),
-              gatheringThreshold = cms.double(0.08),
+              #gatheringThreshold = cms.double(0.08),
+              gatheringThreshold = cms.double(0.0),
               gatheringThresholdPt = cms.double(0.0)
               ),
     cms.PSet( detector = cms.string("ECAL_ENDCAP"),
-              gatheringThreshold = cms.double(0.3),
+              #gatheringThreshold = cms.double(0.3),
+              gatheringThreshold = cms.double(0.0),
               gatheringThresholdPt = cms.double(0.0)
               )
     ),
@@ -72,7 +83,7 @@ _positionCalcECAL_all_nodepth = cms.PSet(
     ##
     minFractionInCalc = cms.double(1e-9),
     posCalcNCrystals = cms.int32(-1),
-    logWeightDenominator = cms.double(0.08), # same as gathering threshold
+    logWeightDenominator = cms.double(0.08), # same as gathering threshold, currently not used for ECAL
     minAllowedNormalization = cms.double(1e-9),
     timeResolutionCalcBarrel = _timeResolutionECALBarrel,
     timeResolutionCalcEndcap = _timeResolutionECALEndcap,
@@ -107,10 +118,10 @@ _pfClusterizer_ECAL = cms.PSet(
     minFracTot = cms.double(1e-20), ## numerical stabilization
     recHitEnergyNorms = cms.VPSet(
     cms.PSet( detector = cms.string("ECAL_BARREL"),
-              recHitEnergyNorm = cms.double(0.08)
+              recHitEnergyNorm = cms.double(0.08) # not relevant for ECAL
               ),
     cms.PSet( detector = cms.string("ECAL_ENDCAP"),
-              recHitEnergyNorm = cms.double(0.3)
+              recHitEnergyNorm = cms.double(0.3) # not relevant for ECAL
               )
     )
 )
@@ -118,7 +129,7 @@ _pfClusterizer_ECAL = cms.PSet(
 particleFlowClusterECALUncorrected = cms.EDProducer(
     "PFClusterProducer",
     recHitsSource = cms.InputTag("particleFlowRecHitECAL"),
-    recHitCleaners = cms.VPSet(),
+    recHitCleaners = cms.VPSet(_seedCleaner_ECAL), 
     seedFinder = _localMaxSeeds_ECAL,
     initialClusteringStep = _topoClusterizer_ECAL,
     pfClusterBuilder = _pfClusterizer_ECAL,

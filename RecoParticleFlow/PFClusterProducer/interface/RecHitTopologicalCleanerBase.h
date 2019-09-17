@@ -5,6 +5,9 @@
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/ParticleFlowReco/interface/PFRecHit.h"
 #include "DataFormats/ParticleFlowReco/interface/PFRecHitFwd.h"
+#include "FWCore/Framework/interface/EventSetup.h"
+#include "FWCore/Framework/interface/ESHandle.h"
+#include "FWCore/Framework/interface/ConsumesCollector.h"
 
 #include <string>
 
@@ -15,6 +18,7 @@ class RecHitTopologicalCleanerBase {
   virtual ~RecHitTopologicalCleanerBase() = default;
   RecHitTopologicalCleanerBase& operator=(const RecHitTopologicalCleanerBase&) = delete;
 
+  virtual void update(const edm::EventSetup&) { }
   virtual void clean(const edm::Handle<reco::PFRecHitCollection>&, 
 		     std::vector<bool>&) = 0;
 

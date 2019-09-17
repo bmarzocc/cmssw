@@ -91,6 +91,8 @@
 #include "CondFormats/DataRecord/interface/EcalMappingElectronicsRcd.h"
 #include "CondFormats/EcalObjects/interface/EcalPFRecHitThresholds.h"
 #include "CondFormats/DataRecord/interface/EcalPFRecHitThresholdsRcd.h"
+#include "CondFormats/EcalObjects/interface/EcalPFSeedingThresholds.h"
+#include "CondFormats/DataRecord/interface/EcalPFSeedingThresholdsRcd.h"
 
 #include "FWCore/Framework/interface/IOVSyncValue.h"
 
@@ -160,6 +162,8 @@ public:
   virtual std::unique_ptr<EcalClusterEnergyCorrectionObjectSpecificParameters> produceEcalClusterEnergyCorrectionObjectSpecificParameters( const EcalClusterEnergyCorrectionObjectSpecificParametersRcd& );
   virtual std::unique_ptr<EcalPFRecHitThresholds> produceEcalPFRecHitThresholds( const EcalPFRecHitThresholdsRcd& );
   virtual std::unique_ptr<EcalPFRecHitThresholds>  getPFRecHitThresholdsFromConfiguration ( const EcalPFRecHitThresholdsRcd& ) ;
+  virtual std::unique_ptr<EcalPFSeedingThresholds> produceEcalPFSeedingThresholds( const EcalPFSeedingThresholdsRcd& );
+  virtual std::unique_ptr<EcalPFSeedingThresholds>  getPFSeedingThresholdsFromConfiguration ( const EcalPFSeedingThresholdsRcd& ) ;
 
 
   virtual std::unique_ptr<EcalChannelStatus> produceEcalChannelStatus( const EcalChannelStatusRcd& );
@@ -231,6 +235,10 @@ private:
   double pfRecHitThresholdsNSigmasHEta_;
   double pfRecHitThresholdsEB_;
   double pfRecHitThresholdsEE_;
+  double pfSeedingThresholdsNSigmas_;
+  double pfSeedingThresholdsNSigmasHEta_;
+  double pfSeedingThresholdsEB_;
+  double pfSeedingThresholdsEE_;
 
   double sim_pulse_shape_EB_thresh_;
   double sim_pulse_shape_EE_thresh_;
@@ -242,6 +250,8 @@ private:
   
   std::string pfRecHitFile_ ;
   std::string pfRecHitFileEE_ ;
+  std::string pfSeedingFile_ ;
+  std::string pfSeedingFileEE_ ;
   
   std::string EELaserAlphaFile2_;
   
@@ -376,6 +386,7 @@ private:
   bool producedEcalAlignmentES_;
   bool producedEcalSimPulseShape_;
   bool producedEcalPFRecHitThresholds_;
+  bool producedEcalPFSeedingThresholds_;
   bool getEBAlignmentFromFile_;
   bool getEEAlignmentFromFile_;
   bool getESAlignmentFromFile_;

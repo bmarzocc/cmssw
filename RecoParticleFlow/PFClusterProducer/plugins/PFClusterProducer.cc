@@ -19,9 +19,11 @@ PFClusterProducer::PFClusterProducer(const edm::ParameterSet& conf) :
   //setup rechit cleaners
   const edm::VParameterSet& cleanerConfs = 
     conf.getParameterSetVector("recHitCleaners");
+  //std::cout << "DEBUG PFClusterProducer::PFClusterProducer " << std::endl;
   for( const auto& conf : cleanerConfs ) {
     const std::string& cleanerName = 
       conf.getParameter<std::string>("algoName");
+    //std::cout << "DEBUG PFClusterProducer::PFClusterProducer cleanerName= " << cleanerName << std::endl;
     _cleaners.emplace_back(RecHitTopologicalCleanerFactory::get()->create(cleanerName,conf));
   }
   edm::ConsumesCollector sumes = consumesCollector();
@@ -64,6 +66,7 @@ PFClusterProducer::PFClusterProducer(const edm::ParameterSet& conf) :
 
 void PFClusterProducer::beginLuminosityBlock(const edm::LuminosityBlock& lumi, 
 					     const edm::EventSetup& es) {
+  for( const auto& cleaner : _cleaners ) cleaner->update(es);
   _initialClustering->update(es);
   if( _pfClusterBuilder ) _pfClusterBuilder->update(es);
   if( _positionReCalc ) _positionReCalc->update(es);
@@ -79,20 +82,17 @@ void PFClusterProducer::produce(edm::Event& e, const edm::EventSetup& es) {
   
   _initialClustering->updateEvent(e);
 
-  std::vector<bool> mask(rechits->size(),true);
+  std::vector<bool> seedmask(rechits->size(),true);
   for( const auto& cleaner : _cleaners ) {
-    cleaner->clean(rechits, mask);
+    cleaner->clean(rechits, seedmask);
   }
 
-
-
   std::vector<bool> seedable(rechits->size(),false);
-  _seedFinder->findSeeds(rechits,mask,seedable);
+  _seedFinder->findSeeds(rechits,seedmask,seedable);
 
-
-
+  std::vector<bool> gathermask(rechits->size(),true);
   auto initialClusters = std::make_unique<reco::PFClusterCollection>();
-  _initialClustering->buildClusters(rechits, mask, seedable, *initialClusters);
+  _initialClustering->buildClusters(rechits, gathermask, seedable, *initialClusters);
   LOGVERB("PFClusterProducer::produce()") << *_initialClustering;
 
 

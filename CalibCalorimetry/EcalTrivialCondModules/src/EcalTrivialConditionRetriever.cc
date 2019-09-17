@@ -77,6 +77,10 @@ EcalTrivialConditionRetriever::EcalTrivialConditionRetriever( const edm::Paramet
   pfRecHitThresholdsEB_ = ps.getUntrackedParameter<double>("EcalPFRecHitThresholdEB", 0.0 );
   pfRecHitThresholdsEE_ = ps.getUntrackedParameter<double>("EcalPFRecHitThresholdEE", 0.0 );
 
+  pfSeedingThresholdsNSigmas_ = ps.getUntrackedParameter<double>("EcalPFSeedingThresholdNSigmas", 1.0 );
+  pfSeedingThresholdsNSigmasHEta_ = ps.getUntrackedParameter<double>("EcalPFSeedingThresholdNSigmasHEta", 1.0 );
+  pfSeedingThresholdsEB_ = ps.getUntrackedParameter<double>("EcalPFSeedingThresholdEB", 0.2 ); // 80 -> 200 MeV
+  pfSeedingThresholdsEE_ = ps.getUntrackedParameter<double>("EcalPFSeedingThresholdEE", 0.5 ); // 300 -> 500 MeV
 
   localContCorrParameters_ = ps.getUntrackedParameter< std::vector<double> >("localContCorrParameters", std::vector<double>(0) );
   crackCorrParameters_ = ps.getUntrackedParameter< std::vector<double> >("crackCorrParameters", std::vector<double>(0) );
@@ -330,6 +334,7 @@ EcalTrivialConditionRetriever::EcalTrivialConditionRetriever( const edm::Paramet
   }
 
    producedEcalPFRecHitThresholds_ = ps.getUntrackedParameter<bool>("producedEcalPFRecHitThresholds", false);
+   producedEcalPFSeedingThresholds_ = ps.getUntrackedParameter<bool>("producedEcalPFSeedingThresholds", false);
 
    // new for PFRecHit Thresholds
    pfRecHitFile_ = ps.getUntrackedParameter<std::string>("PFRecHitFile","");
@@ -343,6 +348,20 @@ EcalTrivialConditionRetriever::EcalTrivialConditionRetriever( const edm::Paramet
          setWhatProduced (this, &EcalTrivialConditionRetriever::produceEcalPFRecHitThresholds ) ;
      }
      findingRecord<EcalPFRecHitThresholdsRcd> () ;
+   }
+
+   // new for PFSeeding Thresholds
+   pfSeedingFile_ = ps.getUntrackedParameter<std::string>("PFSeedingFile","");
+   pfSeedingFileEE_ = ps.getUntrackedParameter<std::string>("PFSeedingFileEE","");
+ 
+ 
+   if (producedEcalPFSeedingThresholds_) { // user asks to produce constants
+     if(!pfSeedingFile_.empty()) {  // if file provided read constants
+         setWhatProduced (this, &EcalTrivialConditionRetriever::getPFSeedingThresholdsFromConfiguration ) ;
+     } else { // set all constants to 0
+         setWhatProduced (this, &EcalTrivialConditionRetriever::produceEcalPFSeedingThresholds ) ;
+     }
+     findingRecord<EcalPFSeedingThresholdsRcd> () ;
    }
 
 
@@ -753,6 +772,44 @@ EcalTrivialConditionRetriever::produceEcalPFRecHitThresholds( const EcalPFRecHit
   return ical;
 }
 
+
+// new for the PF Seeding Thresholds                                                                                                                                        
+
+std::unique_ptr<EcalPFSeedingThresholds>
+EcalTrivialConditionRetriever::produceEcalPFSeedingThresholds( const EcalPFSeedingThresholdsRcd& )
+{
+  auto ical = std::make_unique<EcalPFSeedingThresholds>();
+
+  for(int ieta=-EBDetId::MAX_IETA; ieta<=EBDetId::MAX_IETA ;++ieta) {
+    if(ieta==0) continue;
+    for(int iphi=EBDetId::MIN_IPHI; iphi<=EBDetId::MAX_IPHI; ++iphi) {
+      // make an EBDetId since we need EBDetId::rawId() to be used as the key for the pedestals                                                                             
+      if (EBDetId::validDetId(ieta,iphi))
+        {
+          EBDetId ebid(ieta,iphi);
+          ical->setValue( ebid.rawId(), pfSeedingThresholdsEB_  );
+        }
+    }
+  }
+
+  for(int iX=EEDetId::IX_MIN; iX<=EEDetId::IX_MAX ;++iX) {
+    for(int iY=EEDetId::IY_MIN; iY<=EEDetId::IY_MAX; ++iY) {
+      // make an EEDetId since we need EEDetId::rawId() to be used as the key for the pedestals                                                                             
+      if (EEDetId::validDetId(iX,iY,1))
+        {
+          EEDetId eedetidpos(iX,iY,1);
+          ical->setValue( eedetidpos.rawId(), pfSeedingThresholdsEE_ );
+        }
+      if(EEDetId::validDetId(iX,iY,-1))
+        {
+          EEDetId eedetidneg(iX,iY,-1);
+          ical->setValue( eedetidneg.rawId(), pfSeedingThresholdsEE_ );
+        }
+    }
+  }
+
+  return ical;
+}
 
 
 
@@ -3088,6 +3145,93 @@ EcalTrivialConditionRetriever::getPFRecHitThresholdsFromConfiguration
 
 }
 
+// new for the PF Seeding thresholds                                                                                                                                          
+
+std::unique_ptr<EcalPFSeedingThresholds>
+EcalTrivialConditionRetriever::getPFSeedingThresholdsFromConfiguration
+( const EcalPFSeedingThresholdsRcd& )
+{
+  std::unique_ptr<EcalPFSeedingThresholds> ical;
+
+  // Reads the values from a txt file                                                                                                                                          
+
+
+  edm::LogInfo("EcalTrivialConditionRetriever") << "Reading PF Seeding Thresholds from file "
+                                                << pfSeedingFile_.c_str() ;
+
+  ical = std::make_unique<EcalPFSeedingThresholds>();
+  
+  char line[50];
+  
+  FILE *inpFile; // input file                                                                                                                                                
+  inpFile = fopen(pfSeedingFile_.c_str(),"r");
+  int nxt=0;
+  
+  edm::LogInfo ("Going to multiply the sigmas by ")<<pfSeedingThresholdsNSigmas_;
+  edm::LogInfo ("We will print some values ");
+  
+  
+  while (fgets(line,50,inpFile)) {
+    float thresh;
+    int eta=0;
+    int phi=0;
+    int zeta=0;
+    sscanf(line, "%d %d %d %f", &eta, &phi, &zeta, &thresh);
+    
+    thresh=thresh*pfSeedingThresholdsNSigmas_;
+    
+    if(phi==50) edm::LogInfo ("EB ")<< std::dec<<eta <<"/"<< std::dec<<phi <<"/"<<std::dec<<zeta<<" thresh: " <<thresh ;
+    nxt=nxt+1;
+    
+    EBDetId ebid(eta, phi);
+    ical->setValue( ebid, thresh );
+  }
+
+  fclose(inpFile);
+  
+  edm::LogInfo ("Read number of EB crystals: ")<<nxt;
+
+
+  edm::LogInfo ("Now reading the EE file ... ");
+  edm::LogInfo ("We will multiply the sigma in EE by ")<<pfSeedingThresholdsNSigmas_;
+  edm::LogInfo ("We will multiply the sigma in EE at high eta by")<<pfSeedingThresholdsNSigmasHEta_;
+  edm::LogInfo ("We will print some values ");
+  
+
+  FILE *inpFileEE; // input file                                                                                                                                              
+  inpFileEE = fopen(pfSeedingFileEE_.c_str(),"r");
+  nxt=0;
+  
+  while (fgets(line,40,inpFileEE)) {
+    float thresh;
+    int ix=0;
+    int iy=0;
+    int iz=0;
+    sscanf(line, "%d %d %d %f", &ix, &iy,&iz, &thresh);
+
+    double eta= -log(tan(0.5*atan(sqrt((ix-50.5)*(ix-50.5)+
+                                       (iy-50.5)*(iy-50.5))*2.98/328.))); // approx eta 
+
+    if(eta>2.5) {
+      thresh=thresh*pfSeedingThresholdsNSigmasHEta_;
+    } else {
+      thresh=thresh*pfSeedingThresholdsNSigmas_;
+    }
+
+    if(ix==50) edm::LogInfo ("EE ")<<std::dec<<ix<<"/"<<std::dec<<iy<<"/"<<std::dec<<iz<<" thresh: " <<thresh <<" eta="<<eta;
+
+    EEDetId eeid(ix,iy,iz);
+    ical->setValue( eeid, thresh );
+    nxt=nxt+1;
+  }
+
+  fclose(inpFileEE);
+  edm::LogInfo ("Read number of EE crystals: ")<<nxt;
+  edm::LogInfo ("end PF Rec Hits ... ");
+
+  return ical;
+
+}
 
 std::unique_ptr<EcalIntercalibConstantsMC> 
 EcalTrivialConditionRetriever::getIntercalibConstantsMCFromConfiguration 

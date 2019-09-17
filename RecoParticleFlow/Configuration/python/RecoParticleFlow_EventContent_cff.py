@@ -53,6 +53,7 @@ RecoParticleFlowRECO = cms.PSet(
     outputCommands = cms.untracked.vstring(
     'drop CaloTowersSorted_towerMakerPF_*_*',
     #'keep recoPFRecHits_*_Cleaned_*',
+    'keep recoPFRecHits_particleFlowRecHitECAL_*_*',
     'keep recoPFRecHits_particleFlowClusterECAL_Cleaned_*',
     'keep recoPFRecHits_particleFlowClusterHCAL_Cleaned_*',
     'keep recoPFRecHits_particleFlowClusterHO_Cleaned_*',
