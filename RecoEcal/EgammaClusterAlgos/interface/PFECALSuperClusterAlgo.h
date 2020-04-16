@@ -8,17 +8,27 @@
 #include "DataFormats/ParticleFlowReco/interface/PFRecHitFwd.h"
 #include "DataFormats/ParticleFlowReco/interface/PFLayer.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
+#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 
 #include "DataFormats/EgammaReco/interface/SuperCluster.h"
 #include "DataFormats/EgammaReco/interface/SuperClusterFwd.h"
 #include "DataFormats/EgammaReco/interface/BasicCluster.h"
 #include "DataFormats/EgammaReco/interface/BasicClusterFwd.h"
+#include "DataFormats/EcalDetId/interface/EBDetId.h"
+#include "DataFormats/EcalDetId/interface/EEDetId.h"
+
+#include "Geometry/CaloTopology/interface/CaloTopology.h"
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
+#include "Geometry/CaloEventSetup/interface/CaloTopologyRecord.h"
+#include "Geometry/CaloTopology/interface/CaloSubdetectorTopology.h"
 
 #include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
 
 #include "RecoParticleFlow/PFClusterTools/interface/PFEnergyCalibration.h"
 
 #include "RecoEgamma/EgammaTools/interface/SCEnergyCorrectorSemiParm.h"
+#include "RecoEcal/EgammaCoreTools/interface/DeepSC.h"
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/ESHandle.h"
@@ -42,7 +52,7 @@
 
 class PFECALSuperClusterAlgo {  
  public:
-  enum clustering_type{kBOX=1, kMustache=2};
+  enum clustering_type{kBOX=1, kMustache=2, kDeepSC=3};
   enum energy_weight{kRaw, kCalibratedNoPS, kCalibratedTotal};
 
   // simple class for associating calibrated energies
@@ -98,20 +108,27 @@ class PFECALSuperClusterAlgo {
   void setMajorityFraction( const double f ) { fractionForMajority_ = f; }
   void setDropUnseedable( const bool d ) { dropUnseedable_ = d; }
 
+  void setMustacheParameters (std::vector<double> pMust) { pMustache_ = pMust;}
+  void setDynPhiWindowParameters (std::vector<double> pDynPhiWind) { pDynPhiWin_ = pDynPhiWind;} 
+
   void setIsOOTCollection( bool isOOTCollection ){ isOOTCollection_ = isOOTCollection; }
 
   void setCrackCorrections( bool applyCrackCorrections) { applyCrackCorrections_ = applyCrackCorrections;}
+
+  void setNNSession(std::string NNfileName) { deepSuperCluster_.SetNNGraphSession(NNfileName); }
+  void setNNEvaluationParams(std::vector<std::string> NNinputs) { deepSuperCluster_.SetNNEvaluationParams(NNinputs.at(0), NNinputs.at(1)); }
+  void setNNnormalizationParams(std::vector<double> NNnormalizationParams_mean, std::vector<double> NNnormalizationParams_std ) { deepSuperCluster_.SetNormalizeNNParams(NNnormalizationParams_mean, NNnormalizationParams_std); }
+  void setNNscoreWP( double NNscoreWP ) { deepSuperCluster_NNscoreWP_ = NNscoreWP; }
   
   void setTokens(const edm::ParameterSet&, edm::ConsumesCollector&&);
   void update(const edm::EventSetup&);
-  
   
   std::unique_ptr<reco::SuperClusterCollection>&
     getEBOutputSCCollection() { return superClustersEB_; }
   std::unique_ptr<reco::SuperClusterCollection>&
     getEEOutputSCCollection() { return superClustersEE_; }
 
-  void loadAndSortPFClusters(const edm::Event &evt);
+  void loadAndSortPFClusters(const edm::Event &iEvent, const edm::EventSetup& setup);
   
   void run();
 
@@ -123,6 +140,11 @@ class PFECALSuperClusterAlgo {
    
   const reco::BeamSpot *beamSpot_;
   const ESChannelStatus* channelStatus_;
+  const CaloGeometry *geometry_;
+  const CaloSubdetectorGeometry* ebGeom_;
+  const CaloSubdetectorGeometry* eeGeom_;
+  const CaloSubdetectorGeometry* esGeom_; 
+  const CaloTopology* topology_;
   
   CalibratedClusterPtrVector _clustersEB;
   CalibratedClusterPtrVector _clustersEE;
@@ -135,8 +157,7 @@ class PFECALSuperClusterAlgo {
   void buildAllSuperClusters(CalibratedClusterPtrVector&,
 			     double seedthresh);
   void buildSuperCluster(CalibratedClusterPtr&,
-			 CalibratedClusterPtrVector&); 
-
+			 CalibratedClusterPtrVector&);  
   bool verbose_;
   
   // regression
@@ -163,6 +184,12 @@ class PFECALSuperClusterAlgo {
 
   bool applyCrackCorrections_;
   bool threshIsET_;
+
+  reco::DeepSC deepSuperCluster_;
+  double deepSuperCluster_NNscoreWP_;
+
+  std::vector<double> pMustache_;
+  std::vector<double> pDynPhiWin_;
 
   // OOT photons
   bool isOOTCollection_;

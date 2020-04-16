@@ -37,6 +37,7 @@ using namespace edm;
 namespace {
   const std::string ClusterType__BOX("Box");
   const std::string ClusterType__Mustache("Mustache");
+  const std::string ClusterType__DeepSC("DeepSC");
 
   const std::string EnergyWeight__Raw("Raw");
   const std::string EnergyWeight__CalibratedNoPS("CalibratedNoPS");
@@ -61,6 +62,8 @@ PFECALSuperClusterProducer::PFECALSuperClusterProducer(const edm::ParameterSet& 
     _theclusteringtype = PFECALSuperClusterAlgo::kBOX;
   } else if ( _typename == ClusterType__Mustache ) {
     _theclusteringtype = PFECALSuperClusterAlgo::kMustache;
+  } else if ( _typename == ClusterType__DeepSC ) {
+    _theclusteringtype = PFECALSuperClusterAlgo::kDeepSC;
   } else {
     throw cms::Exception("InvalidClusteringType") 
       << "You have not chosen a valid clustering type," 
@@ -110,6 +113,79 @@ PFECALSuperClusterProducer::PFECALSuperClusterProducer(const edm::ParameterSet& 
     iConfig.getParameter<double>("satelliteMajorityFraction");
   bool dropUnseedable = iConfig.getParameter<bool>("dropUnseedable");
 
+  if(_typename == ClusterType__DeepSC){
+     NNfileName_ = iConfig.getUntrackedParameter<std::string>("NNfileName","deepSC_model.pb");
+     NNevaluationParams_ = iConfig.getUntrackedParameter<std::vector<std::string>>("NNevaluationParams",std::vector<std::string>({std::string("dense_21_input:0"),std::string("dense_24/Sigmoid:0")}));
+     NNnormalizationParams_mean_ = iConfig.getUntrackedParameter<std::vector<double>>("NNnormalizationParams_mean",std::vector<double>({0.,0.,0.,0.,0.,0.,0.}));
+     NNnormalizationParams_std_ = iConfig.getUntrackedParameter<std::vector<double>>("NNnormalizationParams_std",std::vector<double>({1.,1.,1.,1.,1.,1.,1.})); 
+     NNscoreWP_ = iConfig.getUntrackedParameter<double>("NNscoreWP",-1.);
+  }
+
+  // Mustache parameters (dEta parabolas deparation)
+  double p00 = iConfig.getParameter<double>("p00");
+  double p01 = iConfig.getParameter<double>("p01");
+  double p02 = iConfig.getParameter<double>("p02");
+  double p10 = iConfig.getParameter<double>("p10");
+  double p11 = iConfig.getParameter<double>("p11");
+  double p12 = iConfig.getParameter<double>("p12");
+  double w00 = iConfig.getParameter<double>("w00");
+  double w01 = iConfig.getParameter<double>("w01");
+  double w10 = iConfig.getParameter<double>("w10");
+  double w11 = iConfig.getParameter<double>("w11");
+  // dynamic dPhi window 
+  double yoffsetEB   = iConfig.getParameter<double>("yoffsetEB");
+  double scaleEB     = iConfig.getParameter<double>("scaleEB");
+  double xoffsetEB   = iConfig.getParameter<double>("xoffsetEB");
+  double widthEB     = iConfig.getParameter<double>("widthEB");
+  double yoffsetEE_0 = iConfig.getParameter<double>("yoffsetEE_0");
+  double scaleEE_0   = iConfig.getParameter<double>("scaleEE_0");
+  double xoffsetEE_0 = iConfig.getParameter<double>("xoffsetEE_0");
+  double widthEE_0   = iConfig.getParameter<double>("widthEE_0");
+  double yoffsetEE_1 = iConfig.getParameter<double>("yoffsetEE_1");
+  double scaleEE_1   = iConfig.getParameter<double>("scaleEE_1");
+  double xoffsetEE_1 = iConfig.getParameter<double>("xoffsetEE_1");
+  double widthEE_1   = iConfig.getParameter<double>("widthEE_1");
+  double yoffsetEE_2 = iConfig.getParameter<double>("yoffsetEE_2");
+  double scaleEE_2   = iConfig.getParameter<double>("scaleEE_2");
+  double xoffsetEE_2 = iConfig.getParameter<double>("xoffsetEE_2");
+  double widthEE_2   = iConfig.getParameter<double>("widthEE_2");
+
+
+
+  mustacheParams_.resize(10);
+  dynPhiWindowParams_.resize(16);
+
+  mustacheParams_[0]= p00;
+  mustacheParams_[1]= p01;
+  mustacheParams_[2]= p02;
+  mustacheParams_[3]= p10;
+  mustacheParams_[4]= p11;
+  mustacheParams_[5]= p12;
+  mustacheParams_[6]= w00;
+  mustacheParams_[7]= w01;
+  mustacheParams_[8]= w10;
+  mustacheParams_[9]= w11;
+
+
+  dynPhiWindowParams_[0] = yoffsetEB;
+  dynPhiWindowParams_[1] = scaleEB;
+  dynPhiWindowParams_[2] = xoffsetEB;
+  dynPhiWindowParams_[3] = widthEB;
+  dynPhiWindowParams_[4] = yoffsetEE_0;
+  dynPhiWindowParams_[5] = scaleEE_0;
+  dynPhiWindowParams_[6] = xoffsetEE_0;
+  dynPhiWindowParams_[7] = widthEE_0;
+  dynPhiWindowParams_[8] = yoffsetEE_1;
+  dynPhiWindowParams_[9] =  scaleEE_1;
+  dynPhiWindowParams_[10] = xoffsetEE_1;
+  dynPhiWindowParams_[11] = widthEE_1;
+  dynPhiWindowParams_[12] = yoffsetEE_2;
+  dynPhiWindowParams_[13] = scaleEE_2;
+  dynPhiWindowParams_[14] = xoffsetEE_2;
+  dynPhiWindowParams_[15] =  widthEE_2;
+
+  //std::cout << " In the producer dynPhiWindowParams_ size " << dynPhiWindowParams_.size() << std::endl;
+
   superClusterAlgo_.setVerbosityLevel(verbose_);
   superClusterAlgo_.setClusteringType(_theclusteringtype);
   superClusterAlgo_.setEnergyWeighting(_theenergyweight);
@@ -136,7 +212,16 @@ PFECALSuperClusterProducer::PFECALSuperClusterProducer(const edm::ParameterSet& 
   superClusterAlgo_.setDropUnseedable( dropUnseedable );
   //superClusterAlgo_.setThreshPFClusterMustacheOutBarrel( threshPFClusterMustacheOutBarrel );
   //superClusterAlgo_.setThreshPFClusterMustacheOutEndcap( threshPFClusterMustacheOutEndcap );
+  superClusterAlgo_.setMustacheParameters(mustacheParams_);
+  superClusterAlgo_.setDynPhiWindowParameters(dynPhiWindowParams_);
 
+  if(_typename == ClusterType__DeepSC){
+     superClusterAlgo_.setNNSession( NNfileName_ );
+     superClusterAlgo_.setNNEvaluationParams(NNevaluationParams_);
+     superClusterAlgo_.setNNnormalizationParams( NNnormalizationParams_mean_, NNnormalizationParams_std_ );
+     superClusterAlgo_.setNNscoreWP( NNscoreWP_ );
+  }
+ 
   //Load the ECAL energy calibration
   thePFEnergyCalibration_ = 
     std::make_shared<PFEnergyCalibration>();
@@ -180,7 +265,7 @@ void PFECALSuperClusterProducer::produce(edm::Event& iEvent,
 				const edm::EventSetup& iSetup) {
   
   // do clustering
-  superClusterAlgo_.loadAndSortPFClusters(iEvent);
+  superClusterAlgo_.loadAndSortPFClusters(iEvent, iSetup);
   superClusterAlgo_.run();
   
   //build collections of output CaloClusters from the used PFClusters
@@ -350,9 +435,41 @@ void PFECALSuperClusterProducer::fillDescriptions(edm::ConfigurationDescriptions
   desc.add<double>("thresh_PFClusterES",0.0);
   desc.add<bool>("seedThresholdIsET",true);
   desc.add<bool>("isOOTCollection",false);
-  desc.add<edm::InputTag>("barrelRecHits",edm::InputTag("ecalRecHit","EcalRecHitsEE"));
-  desc.add<edm::InputTag>("endcapRecHits",edm::InputTag("ecalRecHit","EcalRecHitsEB"));
+  desc.add<edm::InputTag>("barrelRecHits",edm::InputTag("ecalRecHit","EcalRecHitsEB"));
+  desc.add<edm::InputTag>("endcapRecHits",edm::InputTag("ecalRecHit","EcalRecHitsEE"));
   desc.add<std::string>("PFSuperClusterCollectionEndcapWithPreshower","particleFlowSuperClusterECALEndcapWithPreshower");
   desc.add<bool>("dropUnseedable",false);
+  // old mustache parameters, before optimization 2019-2020
+  desc.add<double>("p00",-0.107537);
+  desc.add<double>("p01",0.590969);
+  desc.add<double>("p02",-0.076494);
+  desc.add<double>("p10",-0.0268843);
+  desc.add<double>("p11",0.147742);
+  desc.add<double>("p12",-0.0191235);
+  desc.add<double>("w00",-0.00571429);
+  desc.add<double>("w01",-0.002);
+  desc.add<double>("w10", 0.0135714);
+  desc.add<double>("w11",0.001);
+  desc.add<double>("yoffsetEB",7.151e-02);
+  desc.add<double>("scaleEB",5.656e-01);
+  desc.add<double>("xoffsetEB",2.931e-01);
+  desc.add<double>("widthEB",2.976e-01);
+  desc.add<double>("yoffsetEE_0",5.058e-02);
+  desc.add<double>("scaleEE_0",7.131e-01);
+  desc.add<double>("xoffsetEE_0",1.668e-02);
+  desc.add<double>("widthEE_0",4.114e-01);
+  desc.add<double>("yoffsetEE_1",-9.913e-02);
+  desc.add<double>("scaleEE_1",4.404e+01);
+  desc.add<double>("xoffsetEE_1",-5.326e+00);
+  desc.add<double>("widthEE_1",1.184e+00);
+  desc.add<double>("yoffsetEE_2",-6.346e-01);
+  desc.add<double>("scaleEE_2",1.317e+01);
+  desc.add<double>("xoffsetEE_2",-7.037e+00);
+  desc.add<double>("widthEE_2",2.836e+00);
+  desc.addUntracked<std::string>("NNfileName","deepSC_model.pb");
+  desc.addUntracked<std::vector<std::string>>("NNevaluationParams",std::vector<std::string>({std::string("dense_21_input:0"),std::string("dense_24/Sigmoid:0")}));
+  desc.addUntracked<std::vector<double>>("NNnormalizationParams_mean",std::vector<double>({0.,0.,0.,0.,0.,0.,0.}));
+  desc.addUntracked<std::vector<double>>("NNnormalizationParams_std",std::vector<double>({1.,1.,1.,1.,1.,1.,1.}));
+  desc.addUntracked<double>("NNscoreWP",-1.); 
   descriptions.add("particleFlowSuperClusterECALMustache",desc);
 }
