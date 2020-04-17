@@ -10,12 +10,15 @@
 
 namespace reco {
   namespace MustacheKernel {    
-      bool inMustache(const float maxEta, const float maxPhi, 
-		      const float ClustE, const float ClusEta, 
-		      const float ClusPhi);
-      bool inDynamicDPhiWindow(const float seedEta, const float seedPhi,
-			       const float ClustE, const float ClusEta,
-			       const float clusPhi);
+      bool inMustache(
+		    const float maxEta, const float maxPhi, const float ClustE, const float ClusEta, const float ClusPhi);
+      bool inDynamicDPhiWindow(
+			     const float seedEta, const float seedPhi, const float ClustE, const float ClusEta, const float clusPhi);
+
+      std::vector<double> pMustache_;  
+      void setMustacheParameters (const std::vector<double>& p) {pMustache_=p;}
+      std::vector<double> pDynPhiWind_;
+      void setDynPhiWindowParameters (const std::vector<double>& p) {pDynPhiWind_=p;}
      
   }
 

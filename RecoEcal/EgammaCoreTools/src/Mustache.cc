@@ -6,24 +6,23 @@ using namespace std;
 
 namespace reco {  
   namespace MustacheKernel {    
-    bool inMustache(const float maxEta, const float maxPhi, 
-		    const float ClustE, const float ClusEta, 
-		    const float ClusPhi){
+    bool inMustache(
+		    const float maxEta, const float maxPhi, const float ClustE, const float ClusEta, const float ClusPhi) {
       //bool inMust=false;
       //float eta0 = maxEta;
       //float phi0 = maxPhi;      
       
-      constexpr float p00 = -0.107537;
-      constexpr float p01 = 0.590969;
-      constexpr float p02 = -0.076494;
-      constexpr float p10 = -0.0268843;
-      constexpr float p11 = 0.147742;
-      constexpr float p12 = -0.0191235;
-      
-      constexpr float w00 = -0.00571429;
-      constexpr float w01 = -0.002;
-      constexpr float w10 = 0.0135714;
-      constexpr float w11 = 0.001;
+      float p00 = pMustache_[0];
+      float p01 = pMustache_[1];
+      float p02 = pMustache_[2];
+      float p10 = pMustache_[3]; 
+      float p11 = pMustache_[4];
+      float p12 = pMustache_[5];
+
+      float w00 = pMustache_[6];
+      float w01 = pMustache_[7];
+      float w10 = pMustache_[8]; 
+      float w11 = pMustache_[9];
       
       const float sineta0 = std::sin(maxEta);
       const float eta0xsineta0 = maxEta*sineta0;
@@ -70,29 +69,28 @@ namespace reco {
       return (deta < upper_cut && deta > lower_cut);
     }
 
-    bool inDynamicDPhiWindow(const float seedEta, const float seedPhi,
-			     const float ClustE, const float ClusEta,
-			     const float ClusPhi) {
+    bool inDynamicDPhiWindow(
+			     const float seedEta, const float seedPhi, const float ClustE, const float ClusEta, const float ClusPhi) {
       // from Rishi's fits 06 June 2013 in log base 10
-      constexpr double yoffsetEB = 7.151e-02;
-      constexpr double scaleEB   = 5.656e-01;
-      constexpr double xoffsetEB = 2.931e-01;
-      constexpr double widthEB   = 2.976e-01;
-
-      constexpr double yoffsetEE_0 =  5.058e-02;
-      constexpr double scaleEE_0   =  7.131e-01;
-      constexpr double xoffsetEE_0 =  1.668e-02;
-      constexpr double widthEE_0   =  4.114e-01;
-
-      constexpr double yoffsetEE_1 = -9.913e-02;
-      constexpr double scaleEE_1   =  4.404e+01;
-      constexpr double xoffsetEE_1 = -5.326e+00;
-      constexpr double widthEE_1   =  1.184e+00;
-
-      constexpr double yoffsetEE_2 = -6.346e-01;
-      constexpr double scaleEE_2   =  1.317e+01;
-      constexpr double xoffsetEE_2 = -7.037e+00;
-      constexpr double widthEE_2   =  2.836e+00;
+      double yoffsetEB = pDynPhiWind_[0];
+      double scaleEB   = pDynPhiWind_[1];
+      double xoffsetEB = pDynPhiWind_[2];
+      double widthEB   = pDynPhiWind_[3]; 
+      
+      double yoffsetEE_0 = pDynPhiWind_[4];
+      double scaleEE_0   = pDynPhiWind_[5];
+      double xoffsetEE_0 = pDynPhiWind_[6];
+      double widthEE_0   = pDynPhiWind_[7];
+      
+      double yoffsetEE_1 = pDynPhiWind_[8];
+      double scaleEE_1   = pDynPhiWind_[9];
+      double xoffsetEE_1 = pDynPhiWind_[10];
+      double widthEE_1   = pDynPhiWind_[11];
+      
+      double yoffsetEE_2 = pDynPhiWind_[12];
+      double scaleEE_2   = pDynPhiWind_[13];
+      double xoffsetEE_2 = pDynPhiWind_[14];
+      double widthEE_2   = pDynPhiWind_[15];
       
       
       const double absSeedEta = std::abs(seedEta);
