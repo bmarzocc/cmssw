@@ -341,13 +341,13 @@ PFAlgo::setPFVertexParameters(bool useVertex, reco::VertexCollection const&  pri
   }
 }
 
-void PFAlgo::reconstructParticles( const reco::PFBlockHandle& blockHandle, PFEGammaFilters const* pfegamma ) {
+void PFAlgo::reconstructParticles( const reco::PFBlockHandle& blockHandle, PFEGammaFilters const* pfegamma, const CaloTopology *topology, const CaloSubdetectorGeometry* ebGeom, const CaloSubdetectorGeometry* eeGeom, const EcalRecHitCollection *recHitsEB, const EcalRecHitCollection *recHitsEE) {
 
   blockHandle_ = blockHandle;
-  reconstructParticles( *blockHandle_, pfegamma );
+  reconstructParticles( *blockHandle_, pfegamma, topology, ebGeom, eeGeom, recHitsEB, recHitsEE);
 }
 
-void PFAlgo::reconstructParticles( const reco::PFBlockCollection& blocks, PFEGammaFilters const* pfegamma ) {
+void PFAlgo::reconstructParticles( const reco::PFBlockCollection& blocks, PFEGammaFilters const* pfegamma, const CaloTopology *topology, const CaloSubdetectorGeometry* ebGeom, const CaloSubdetectorGeometry* eeGeom, const EcalRecHitCollection *recHitsEB, const EcalRecHitCollection *recHitsEE) {
 
   // reset output collection
   if(pfCandidates_.get() )
@@ -431,7 +431,7 @@ void PFAlgo::reconstructParticles( const reco::PFBlockCollection& blocks, PFEGam
   unsigned nblcks = 0;
   for(auto const& other : otherBlockRefs) {
     if ( debug_ ) std::cout << "Block number " << nblcks++ << std::endl;
-    processBlock( other, hcalBlockRefs, ecalBlockRefs, pfegamma );
+    processBlock( other, hcalBlockRefs, ecalBlockRefs, pfegamma, topology, ebGeom, eeGeom, recHitsEB, recHitsEE );
   }
 
   std::list< reco::PFBlockRef > empty;
@@ -440,14 +440,14 @@ void PFAlgo::reconstructParticles( const reco::PFBlockCollection& blocks, PFEGam
   // process remaining single hcal blocks
   for(auto const& hcal : hcalBlockRefs) {
     if ( debug_ ) std::cout << "HCAL block number " << hblcks++ << std::endl;
-    processBlock( hcal, empty, empty, pfegamma );
+    processBlock( hcal, empty, empty, pfegamma, topology, ebGeom, eeGeom, recHitsEB, recHitsEE );
   }
 
   unsigned eblcks = 0;
   // process remaining single ecal blocks
   for(auto const& ecal : ecalBlockRefs) {
     if ( debug_ ) std::cout << "ECAL block number " << eblcks++ << std::endl;
-    processBlock( ecal, empty, empty, pfegamma );
+    processBlock( ecal, empty, empty, pfegamma, topology, ebGeom, eeGeom, recHitsEB, recHitsEE );
   }
 
   // Post HF Cleaning
@@ -464,7 +464,13 @@ void PFAlgo::reconstructParticles( const reco::PFBlockCollection& blocks, PFEGam
 
 void PFAlgo::processBlock( const reco::PFBlockRef& blockref,
                            std::list<reco::PFBlockRef>& hcalBlockRefs,
-                           std::list<reco::PFBlockRef>& ecalBlockRefs, PFEGammaFilters const* pfegamma  ) {
+                           std::list<reco::PFBlockRef>& ecalBlockRefs, 
+                           PFEGammaFilters const* pfegamma, 
+                           const CaloTopology *topology, 
+                           const CaloSubdetectorGeometry* ebGeom, 
+                           const CaloSubdetectorGeometry* eeGeom, 
+                           const EcalRecHitCollection *recHitsEB, 
+                           const EcalRecHitCollection *recHitsEE) {
 
   // debug_ = false;
   assert(!blockref.isNull() );
@@ -473,7 +479,7 @@ void PFAlgo::processBlock( const reco::PFBlockRef& blockref,
   if(debug_) {
     cout<<"#########################################################"<<endl;
     cout<<"#####           Process Block:                      #####"<<endl;
-    cout<<"#########################################################"<<endl;
+    cout<<"#########################################################"<<endl;           
     cout<<block<<endl;
   }
 
@@ -520,9 +526,14 @@ void PFAlgo::processBlock( const reco::PFBlockRef& blockref,
 					active,                 // std::vector<bool> containing information about acitivity
 					pfPhotonCandidates_,    // pointer to candidate vector, to be filled by the routine
 					pfPhotonExtraCand,      // candidate extra vector, to be filled by the routine
-					tempElectronCandidates
-					//pfElectronCandidates_   // pointer to some auziliary UNTOUCHED FOR NOW
-					) ) {
+					tempElectronCandidates,
+					//pfElectronCandidates_,   // pointer to some auziliary UNTOUCHED FOR NOW
+					topology,
+                                        ebGeom,
+                                        eeGeom,
+                                        recHitsEB,
+                                        recHitsEE
+                                        ) ) {
       if(debug_)
 	std::cout<< " In this PFBlock we found "<<pfPhotonCandidates_->size()<<" Photon Candidates."<<std::endl;
 

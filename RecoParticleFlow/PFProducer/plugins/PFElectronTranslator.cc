@@ -5,6 +5,7 @@
 #include "RecoParticleFlow/PFProducer/plugins/PFElectronTranslator.h"
 #include "RecoParticleFlow/PFClusterTools/interface/PFClusterWidthAlgo.h"
 #include "RecoEcal/EgammaCoreTools/interface/Mustache.h"
+#include "RecoEcal/EgammaCoreTools/interface/DeepSC.h"
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidateElectronExtra.h"
 #include "DataFormats/EgammaReco/interface/BasicCluster.h"
@@ -26,6 +27,10 @@ PFElectronTranslator::PFElectronTranslator(const edm::ParameterSet & iConfig) {
     = iConfig.getParameter<edm::InputTag>("PFCandidateElectron");
   inputTagGSFTracks_
     = iConfig.getParameter<edm::InputTag>("GSFTracks");
+  inputTagBarrelRecHits_ 
+    = consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("BarrelRecHits"));
+  inputTagEndcapRecHits_ 
+    = consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("EarrelRecHits"));
 
   bool useIsolationValues = iConfig.getParameter<bool>("useIsolationValues") ;
   if ( useIsolationValues ) {
@@ -101,6 +106,23 @@ void PFElectronTranslator::produce(edm::Event& iEvent,
     iEvent.getByLabel(inputTagIsoVals_[j], isolationValues[j]);
   }
 
+  edm::ESHandle<CaloTopology> caloTopologyHandle;
+  iSetup.get<CaloTopologyRecord>().get(caloTopologyHandle);
+  topology_ = caloTopologyHandle.product();
+
+  edm::ESHandle<CaloGeometry> caloGeometryHandle;
+  iSetup.get<CaloGeometryRecord>().get(caloGeometryHandle);
+  geometry_ = caloGeometryHandle.product();
+  ebGeom_ = caloGeometryHandle->getSubdetectorGeometry(DetId::Ecal, EcalBarrel);
+  eeGeom_ = caloGeometryHandle->getSubdetectorGeometry(DetId::Ecal, EcalEndcap);
+
+  edm::Handle<EcalRecHitCollection> barrelRecHitsHandle;
+  iEvent.getByToken(inputTagBarrelRecHits_, barrelRecHitsHandle);
+  barrelRecHits_ = barrelRecHitsHandle.product();
+
+  edm::Handle<EcalRecHitCollection> endcapRecHitsHandle;
+  iEvent.getByToken(inputTagEndcapRecHits_, endcapRecHitsHandle);
+  endcapRecHits_ = endcapRecHitsHandle.product();
 
   // clear the vectors
   GsfTrackRef_.clear();
@@ -605,9 +627,9 @@ void PFElectronTranslator::createGsfElectrons(const reco::PFCandidateCollection 
       myMvaInput.sigmaEtaEta = pfCandidate.electronExtraRef()->sigmaEtaEta();
       myMvaInput.hadEnergy = pfCandidate.electronExtraRef()->hadEnergy();
 
-      // Mustache
-      reco::Mustache myMustache;
-      myMustache.MustacheID(*(myElectron. parentSuperCluster()), myMvaInput.nClusterOutsideMustache, myMvaInput.etOutsideMustache );
+      // DeepSC
+      reco::DeepSC myDeepSC;
+      myDeepSC.DeepSCID(*(myElectron.parentSuperCluster()), myMvaInput.nClusterOutsideMustache, myMvaInput.etOutsideMustache, topology_, ebGeom_, eeGeom_, barrelRecHits_, endcapRecHits_);
 
       myElectron.setMvaInput(myMvaInput);
 

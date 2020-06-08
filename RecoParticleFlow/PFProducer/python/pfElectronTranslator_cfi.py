@@ -5,6 +5,8 @@ from RecoParticleFlow.PFProducer.pfElectronTranslatorMVACut_cfi import *
 pfElectronTranslator = cms.EDProducer("PFElectronTranslator",
                                       PFCandidate = cms.InputTag("pfSelectedElectrons"),
                                       PFCandidateElectron = cms.InputTag("particleFlowTmp:electrons"),
+                                      BarrelRecHits = cms.InputTag("ecalRecHit","EcalRecHitsEB"),
+                                      EndcapRecHits = cms.InputTag("ecalRecHit","EcalRecHitsEE"), 
                                       GSFTracks = cms.InputTag("electronGsfTracks"),
                                       PFBasicClusters = cms.string("pf"),
                                       PFPreshowerClusters = cms.string("pf"),

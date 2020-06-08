@@ -8,6 +8,7 @@
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidatePhotonExtraFwd.h"
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/Common/interface/OrphanHandle.h"
+#include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "DataFormats/CaloRecHit/interface/CaloClusterFwd.h"
 #include "DataFormats/ParticleFlowReco/interface/PFBlockElementGsfTrack.h"
@@ -16,6 +17,14 @@
 #include "DataFormats/ParticleFlowReco/interface/PFBlockElementTrack.h"
 #include "DataFormats/ParticleFlowReco/interface/PFBlockElementSuperCluster.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
+
+#include "Geometry/CaloTopology/interface/CaloTopology.h"
+#include "Geometry/CaloTopology/interface/CaloSubdetectorTopology.h"
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
+#include "Geometry/CaloEventSetup/interface/CaloTopologyRecord.h"
+#include "Geometry/EcalAlgo/interface/EcalBarrelGeometry.h"
+#include "Geometry/EcalAlgo/interface/EcalEndcapGeometry.h"
 
 #include "CondFormats/EgammaObjects/interface/GBRForest.h"
 #include "TMVA/Reader.h"
@@ -83,9 +92,13 @@ class PFPhotonAlgo {
 			      std::vector< bool >&  active,
 			      std::unique_ptr< reco::PFCandidateCollection > &pfPhotonCandidates,
 			      std::vector<reco::PFCandidatePhotonExtra>& pfPhotonExtraCandidates,
-			      std::vector<reco::PFCandidate>& 
-			      tempElectronCandidates
-			      //      std::shared_ptr< reco::PFCandidateCollection > &pfElectronCandidates_  
+			      std::vector<reco::PFCandidate>& tempElectronCandidates,
+			      //      std::shared_ptr< reco::PFCandidateCollection > &pfElectronCandidates_ 
+                              const CaloTopology *topology, 
+                              const CaloSubdetectorGeometry* ebGeom, 
+                              const CaloSubdetectorGeometry* eeGeom, 
+                              const EcalRecHitCollection *recHitsEB, 
+                              const EcalRecHitCollection *recHitsEE  
 			      ){
     isvalid_=false;
     // RunPFPhoton has to set isvalid_ to TRUE in case it finds a valid candidate
@@ -96,7 +109,12 @@ class PFPhotonAlgo {
 		active,
 		pfPhotonCandidates,
 		pfPhotonExtraCandidates,
-		tempElectronCandidates
+		tempElectronCandidates,
+                topology,
+                ebGeom,
+                eeGeom,
+                recHitsEB,
+                recHitsEE
 		);
     int ind=0;
     int matches=match_ind.size();
@@ -203,8 +221,12 @@ private:
 		   pfPhotonExtraCandidates,
 		   //  std::unique_ptr<reco::PFCandidateCollection> 
 		   //&pfElectronCandidates_
-		   std::vector<reco::PFCandidate>& 
-		   tempElectronCandidates
+		   std::vector<reco::PFCandidate>& tempElectronCandidates,
+                   const CaloTopology *topology, 
+                   const CaloSubdetectorGeometry* ebGeom, 
+                   const CaloSubdetectorGeometry* eeGeom, 
+                   const EcalRecHitCollection *recHitsEB, 
+                   const EcalRecHitCollection *recHitsEE 
 		   );
 
   bool EvaluateSingleLegMVA(const reco::PFBlockRef& blockref, 
@@ -213,8 +235,8 @@ private:
   
   double ClustersPhiRMS(const std::vector<reco::CaloCluster>&PFClusters, float PFPhoPhi);
   float EvaluateLCorrMVA(reco::PFClusterRef clusterRef );
-  float EvaluateGCorrMVA(const reco::PFCandidate&, const std::vector<reco::CaloCluster>& PFClusters);
-  float EvaluateResMVA(const reco::PFCandidate&,const std::vector<reco::CaloCluster>& PFClusters );
+  float EvaluateGCorrMVA(const reco::PFCandidate&, const std::vector<reco::CaloCluster>& PFClusters, const CaloTopology *topology, const CaloSubdetectorGeometry* ebGeom, const CaloSubdetectorGeometry* eeGeom, const EcalRecHitCollection *recHitsEB, const EcalRecHitCollection *recHitsEE);
+  float EvaluateResMVA(const reco::PFCandidate&,const std::vector<reco::CaloCluster>& PFClusters, const CaloTopology *topology, const CaloSubdetectorGeometry* ebGeom, const CaloSubdetectorGeometry* eeGeom, const EcalRecHitCollection *recHitsEB, const EcalRecHitCollection *recHitsEE);
   std::vector<int> getPFMustacheClus(int nClust, std::vector<float>& ClustEt, std::vector<float>& ClustEta, std::vector<float>& ClustPhi);
   void EarlyConversion(
 		       //std::auto_ptr< reco::PFCandidateCollection > 

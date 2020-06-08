@@ -45,6 +45,7 @@
 #include "DataFormats/GeometryVector/interface/GlobalVector.h"
 #include "DataFormats/Common/interface/AssociationVector.h"
 #include "RecoEcal/EgammaCoreTools/interface/Mustache.h"
+#include "RecoEcal/EgammaCoreTools/interface/DeepSC.h"
 
 #include <Math/VectorUtil.h>
 #include <vector>
@@ -85,11 +86,11 @@ PFPhotonTranslator::PFPhotonTranslator(const edm::ParameterSet & iConfig) {
 
   vertexProducer_   = iConfig.getParameter<std::string>("primaryVertexProducer");
 
-  barrelEcalHits_   = iConfig.getParameter<edm::InputTag>("barrelEcalHits");
-  endcapEcalHits_   = iConfig.getParameter<edm::InputTag>("endcapEcalHits");
-
   hcalTowers_ = iConfig.getParameter<edm::InputTag>("hcalTowers");
   hOverEConeSize_   = iConfig.getParameter<double>("hOverEConeSize");
+
+  inputTagBarrelRecHits_ = consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("BarrelRecHits"));
+  inputTagEndcapRecHits_ = consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("EarrelRecHits"));
 
   if (iConfig.exists("emptyIsOk")) emptyIsOk_ = iConfig.getParameter<bool>("emptyIsOk");
   else emptyIsOk_=false;
@@ -144,7 +145,24 @@ void PFPhotonTranslator::produce(edm::Event& iEvent,
   for (size_t j = 0; j<inputTagIsoVals_.size(); ++j) {
     iEvent.getByLabel(inputTagIsoVals_[j], isolationValues[j]);
   }
-  
+
+  edm::ESHandle<CaloTopology> caloTopologyHandle;
+  iSetup.get<CaloTopologyRecord>().get(caloTopologyHandle);
+  topology_ = caloTopologyHandle.product();
+
+  edm::ESHandle<CaloGeometry> caloGeometryHandle;
+  iSetup.get<CaloGeometryRecord>().get(caloGeometryHandle);
+  geometry_ = caloGeometryHandle.product();
+  ebGeom_ = caloGeometryHandle->getSubdetectorGeometry(DetId::Ecal, EcalBarrel);
+  eeGeom_ = caloGeometryHandle->getSubdetectorGeometry(DetId::Ecal, EcalEndcap);
+
+  edm::Handle<EcalRecHitCollection> barrelRecHitsHandle;
+  iEvent.getByToken(inputTagBarrelRecHits_, barrelRecHitsHandle);
+  barrelRecHits_ = barrelRecHitsHandle.product();
+
+  edm::Handle<EcalRecHitCollection> endcapRecHitsHandle;
+  iEvent.getByToken(inputTagEndcapRecHits_, endcapRecHitsHandle);
+  endcapRecHits_ = endcapRecHitsHandle.product();
 
   // clear the vectors
   photPFCandidateIndex_.clear();
@@ -969,8 +987,8 @@ void PFPhotonTranslator::createPhotons(reco::VertexCollection &vertexCollection,
       
       reco::Photon::PflowIDVariables myPFVariables;
 
-      reco::Mustache myMustache;
-      myMustache.MustacheID(*(myPhoton.parentSuperCluster()), myPFVariables.nClusterOutsideMustache, myPFVariables.etOutsideMustache );
+      reco::DeepSC myDeepSC;
+      myDeepSC.DeepSCID(*(myPhoton.parentSuperCluster()), myPFVariables.nClusterOutsideMustache, myPFVariables.etOutsideMustache, topology_, ebGeom_, eeGeom_, barrelRecHits_, endcapRecHits_);
       myPFVariables.mva = pfPhotonMva_[iphot];
       myPhoton.setPflowIDVariables(myPFVariables);
 

@@ -6,6 +6,8 @@ from RecoEgamma.PhotonIdentification.isolationCalculator_cfi import *
 pfPhotonTranslator = cms.EDProducer("PFPhotonTranslator",
                                     #PFCandidate = cms.InputTag("particleFlow"),
                                     PFCandidate = cms.InputTag("pfSelectedPhotons"),
+                                    BarrelRecHits = cms.InputTag("ecalRecHit","EcalRecHitsEB"),
+                                    EndcapRecHits = cms.InputTag("ecalRecHit","EcalRecHitsEE"), 
                                     PFBasicClusters = cms.string("pfphot"),
                                     PFPreshowerClusters = cms.string("pfphot"),
                                     PFSuperClusters = cms.string("pfphot"),

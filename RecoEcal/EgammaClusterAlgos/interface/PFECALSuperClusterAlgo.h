@@ -14,11 +14,21 @@
 #include "DataFormats/EgammaReco/interface/BasicCluster.h"
 #include "DataFormats/EgammaReco/interface/BasicClusterFwd.h"
 
+#include "DataFormats/EcalDetId/interface/EBDetId.h"
+#include "DataFormats/EcalDetId/interface/EEDetId.h"
+#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
+
+#include "Geometry/CaloTopology/interface/CaloTopology.h"
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
+#include "Geometry/CaloEventSetup/interface/CaloTopologyRecord.h"
+#include "Geometry/CaloTopology/interface/CaloSubdetectorTopology.h"
 
 #include "RecoParticleFlow/PFClusterTools/interface/PFEnergyCalibration.h"
 
 #include "RecoEgamma/EgammaTools/interface/SCEnergyCorrectorSemiParm.h"
+#include "RecoEcal/EgammaCoreTools/interface/DeepSC.h"
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/ESHandle.h"
@@ -42,7 +52,7 @@
 
 class PFECALSuperClusterAlgo {  
  public:
-  enum clustering_type{kBOX=1, kMustache=2};
+  enum clustering_type{kBOX=1, kMustache=2, kDeepSC=3};
   enum energy_weight{kRaw, kCalibratedNoPS, kCalibratedTotal};
 
   // simple class for associating calibrated energies
@@ -112,6 +122,7 @@ class PFECALSuperClusterAlgo {
     getEEOutputSCCollection() { return superClustersEE_; }
 
   void loadAndSortPFClusters(const edm::Event &evt);
+  //void loadAndSortPFClusters(const edm::Event &iEvent, const edm::EventSetup& setup);
   
   void run();
 
@@ -123,6 +134,11 @@ class PFECALSuperClusterAlgo {
    
   const reco::BeamSpot *beamSpot_;
   const ESChannelStatus* channelStatus_;
+  const CaloGeometry *geometry_;
+  const CaloSubdetectorGeometry* ebGeom_;
+  const CaloSubdetectorGeometry* eeGeom_;
+  const CaloSubdetectorGeometry* esGeom_; 
+  const CaloTopology* topology_;
   
   CalibratedClusterPtrVector _clustersEB;
   CalibratedClusterPtrVector _clustersEE;
@@ -163,6 +179,8 @@ class PFECALSuperClusterAlgo {
 
   bool applyCrackCorrections_;
   bool threshIsET_;
+
+  reco::DeepSC* deepSuperCluster_;
 
   // OOT photons
   bool isOOTCollection_;

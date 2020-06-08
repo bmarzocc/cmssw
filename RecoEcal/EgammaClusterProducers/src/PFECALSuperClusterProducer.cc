@@ -37,6 +37,7 @@ using namespace edm;
 namespace {
   const std::string ClusterType__BOX("Box");
   const std::string ClusterType__Mustache("Mustache");
+  const std::string ClusterType__DeepSC("DeepSC");
 
   const std::string EnergyWeight__Raw("Raw");
   const std::string EnergyWeight__CalibratedNoPS("CalibratedNoPS");
@@ -54,18 +55,21 @@ PFECALSuperClusterProducer::PFECALSuperClusterProducer(const edm::ParameterSet& 
   isOOTCollection_ = iConfig.getParameter<bool>("isOOTCollection");
   superClusterAlgo_.setIsOOTCollection(isOOTCollection_);
 
-  superClusterAlgo_.setTokens(iConfig,consumesCollector());
-
   std::string _typename = iConfig.getParameter<std::string>("ClusteringType");
   if( _typename == ClusterType__BOX ) {
     _theclusteringtype = PFECALSuperClusterAlgo::kBOX;
   } else if ( _typename == ClusterType__Mustache ) {
     _theclusteringtype = PFECALSuperClusterAlgo::kMustache;
+  } else if ( _typename == ClusterType__DeepSC ) {
+    _theclusteringtype = PFECALSuperClusterAlgo::kDeepSC;
   } else {
     throw cms::Exception("InvalidClusteringType") 
       << "You have not chosen a valid clustering type," 
       << " please choose from \"Box\" or \"Mustache\"!";
   }
+ 
+  superClusterAlgo_.setClusteringType(_theclusteringtype);
+  superClusterAlgo_.setTokens(iConfig,consumesCollector());
 
   std::string _weightname = iConfig.getParameter<std::string>("EnergyWeight");
   if( _weightname == EnergyWeight__Raw ) {
@@ -111,7 +115,6 @@ PFECALSuperClusterProducer::PFECALSuperClusterProducer(const edm::ParameterSet& 
   bool dropUnseedable = iConfig.getParameter<bool>("dropUnseedable");
 
   superClusterAlgo_.setVerbosityLevel(verbose_);
-  superClusterAlgo_.setClusteringType(_theclusteringtype);
   superClusterAlgo_.setEnergyWeighting(_theenergyweight);
   superClusterAlgo_.setUseETForSeeding(seedThresholdIsET);
   superClusterAlgo_.setUseDynamicDPhi(useDynamicDPhi);
@@ -350,8 +353,8 @@ void PFECALSuperClusterProducer::fillDescriptions(edm::ConfigurationDescriptions
   desc.add<double>("thresh_PFClusterES",0.0);
   desc.add<bool>("seedThresholdIsET",true);
   desc.add<bool>("isOOTCollection",false);
-  desc.add<edm::InputTag>("barrelRecHits",edm::InputTag("ecalRecHit","EcalRecHitsEE"));
-  desc.add<edm::InputTag>("endcapRecHits",edm::InputTag("ecalRecHit","EcalRecHitsEB"));
+  desc.add<edm::InputTag>("barrelRecHits",edm::InputTag("ecalRecHit","EcalRecHitsEB"));
+  desc.add<edm::InputTag>("endcapRecHits",edm::InputTag("ecalRecHit","EcalRecHitsEE"));
   desc.add<std::string>("PFSuperClusterCollectionEndcapWithPreshower","particleFlowSuperClusterECALEndcapWithPreshower");
   desc.add<bool>("dropUnseedable",false);
   descriptions.add("particleFlowSuperClusterECALMustache",desc);

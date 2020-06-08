@@ -9,6 +9,10 @@ particleFlowTmp = cms.EDProducer("PFProducer",
     muons = cms.InputTag("muons1stStep"),
     postMuonCleaning = cms.bool(True),
 
+    #ecalRechits
+    barrelRecHits = cms.InputTag("ecalRecHit","EcalRecHitsEB"),
+    endcapRecHits = cms.InputTag("ecalRecHit","EcalRecHitsEE"), 
+
     # Vertices label
     vertexCollection = cms.InputTag("offlinePrimaryVertices"),
     useVerticesForNeutral = cms.bool(True),

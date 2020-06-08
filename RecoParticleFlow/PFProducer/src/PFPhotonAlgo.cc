@@ -17,6 +17,7 @@
 #include "RecoParticleFlow/PFClusterTools/interface/PFEnergyCalibration.h"
 #include "RecoParticleFlow/PFClusterTools/interface/PFPhotonClusters.h"
 #include "RecoEcal/EgammaCoreTools/interface/Mustache.h"
+#include "RecoEcal/EgammaCoreTools/interface/DeepSC.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
 #include "DataFormats/Math/interface/deltaR.h"
 #include <TFile.h>
@@ -88,8 +89,12 @@ void PFPhotonAlgo::RunPFPhoton(const reco::PFBlockRef&  blockRef,
 			       std::vector<bool>& active,
 			       std::unique_ptr<PFCandidateCollection> &pfCandidates,
 			       std::vector<reco::PFCandidatePhotonExtra>& pfPhotonExtraCandidates,
-			       std::vector<reco::PFCandidate> 
-			       &tempElectronCandidates
+			       std::vector<reco::PFCandidate>& tempElectronCandidates,
+                               const CaloTopology *topology, 
+                               const CaloSubdetectorGeometry* ebGeom, 
+                               const CaloSubdetectorGeometry* eeGeom, 
+                               const EcalRecHitCollection *recHitsEB, 
+                               const EcalRecHitCollection *recHitsEE     
 ){
   
   //std::cout<<" calling RunPFPhoton "<<std::endl;
@@ -859,7 +864,7 @@ void PFPhotonAlgo::RunPFPhoton(const reco::PFBlockRef&  blockRef,
     TotPS1_=ps1TotEne;
     TotPS2_=ps2TotEne;
     //Do Global Corrections here:
-    float GCorr=EvaluateGCorrMVA(photonCand, PFClusters);
+    float GCorr=EvaluateGCorrMVA(photonCand, PFClusters, topology, ebGeom, eeGeom, recHitsEB, recHitsEE);
     if(useReg_){
       math::XYZTLorentzVector photonCorrMomentum(GCorr*PFPhoECorr_* photonDirection.X(),
 						 GCorr*PFPhoECorr_* photonDirection.Y(),
@@ -879,11 +884,11 @@ void PFPhotonAlgo::RunPFPhoton(const reco::PFBlockRef&  blockRef,
     //store Position at ECAL Entrance as Position of Max Et PFCluster
     photonCand.setPositionAtECALEntrance(math::XYZPointF(PFClusters[highEindex].position()));
     
-    //Mustache ID variables
-    Mustache Must;
-    Must.FillMustacheVar(PFClusters);
-    int excluded= Must.OutsideMust();
-    float MustacheEt=Must.MustacheEtOut();
+    //DeeoSC ID variables
+    DeepSC Must;
+    Must.FillDeepSCVar(PFClusters, topology, ebGeom, eeGeom, recHitsEB, recHitsEE);
+    int excluded= Must.OutsideDeep();
+    float MustacheEt=Must.DeepSCEtOut();
     myExtra.setMustache_Et(MustacheEt);
     myExtra.setExcludedClust(excluded);
     if(fabs(photonCand.eta()<1.4446))
@@ -891,7 +896,7 @@ void PFPhotonAlgo::RunPFPhoton(const reco::PFBlockRef&  blockRef,
     else if(PFPhoR9_>0.94)
       myExtra.setMVAGlobalCorrE(GCorr * PFPhoECorr_);
     else myExtra.setMVAGlobalCorrE(GCorr * photonEnergy_);
-    float Res=EvaluateResMVA(photonCand, PFClusters);
+    float Res=EvaluateResMVA(photonCand, PFClusters, topology, ebGeom, eeGeom, recHitsEB, recHitsEE);
     myExtra.SetPFPhotonRes(Res);
     
     //    Daniele example for mvaValues
@@ -916,7 +921,9 @@ void PFPhotonAlgo::RunPFPhoton(const reco::PFBlockRef&  blockRef,
   return;
 }
 
-float PFPhotonAlgo::EvaluateResMVA(const reco::PFCandidate& photon, const std::vector<reco::CaloCluster>& _PFClusters){
+float PFPhotonAlgo::EvaluateResMVA(const reco::PFCandidate& photon, const std::vector<reco::CaloCluster>& _PFClusters,  const CaloTopology *topology, 
+                                     const CaloSubdetectorGeometry* ebGeom, const CaloSubdetectorGeometry* eeGeom, const EcalRecHitCollection *recHitsEB, 
+                                     const EcalRecHitCollection *recHitsEE){
   std::vector<reco::CaloCluster> PFClusters = _PFClusters;
   float BDTG=1;
   PFPhoEta_=photon.eta();
@@ -930,15 +937,15 @@ float PFPhotonAlgo::EvaluateResMVA(const reco::PFCandidate& photon, const std::v
   x0outer_=X0_outer->GetBinContent(ix,iy);
   SCPhiWidth_=photon.superClusterRef()->phiWidth();
   SCEtaWidth_=photon.superClusterRef()->etaWidth();
-  Mustache Must;
+  DeepSC Must;
   std::vector<unsigned int>insideMust;
   std::vector<unsigned int>outsideMust;
   std::multimap<float, unsigned int>OrderedClust;
-  Must.FillMustacheVar(PFClusters);
-  MustE_=Must.MustacheE();
-  LowClusE_=Must.LowestMustClust();
+  Must.FillDeepSCVar(PFClusters, topology, ebGeom, eeGeom, recHitsEB, recHitsEE);
+  MustE_=Must.DeepSCE();
+  LowClusE_=Must.LowestDeepClust();
   PFPhoR9Corr_=E3x3_/MustE_;
-  Must.MustacheClust(PFClusters,insideMust, outsideMust );
+  Must.DeepSCClust(PFClusters, topology, ebGeom, eeGeom, recHitsEB, recHitsEE, insideMust, outsideMust );
   for(unsigned int i=0; i<insideMust.size(); ++i){
     int index=insideMust[i];
     OrderedClust.emplace(PFClusters[index].energy(),index);
@@ -1021,8 +1028,10 @@ float PFPhotonAlgo::EvaluateResMVA(const reco::PFCandidate& photon, const std::v
    
 }
 
-float PFPhotonAlgo::EvaluateGCorrMVA(const reco::PFCandidate& photon, const std::vector<CaloCluster>& _PFClusters){
-  std::vector<CaloCluster> PFClusters = _PFClusters;
+float PFPhotonAlgo::EvaluateGCorrMVA(const reco::PFCandidate& photon, const std::vector<CaloCluster>& _PFClusters, const CaloTopology *topology, 
+                                     const CaloSubdetectorGeometry* ebGeom, const CaloSubdetectorGeometry* eeGeom, const EcalRecHitCollection *recHitsEB, 
+                                     const EcalRecHitCollection *recHitsEE){
+  std::vector<CaloCluster> PFClusters = _PFClusters;                         
   float BDTG=1;
   PFPhoEta_=photon.eta();
   PFPhoPhi_=photon.phi();
@@ -1035,15 +1044,15 @@ float PFPhotonAlgo::EvaluateGCorrMVA(const reco::PFCandidate& photon, const std:
   x0outer_=X0_outer->GetBinContent(ix,iy);
   SCPhiWidth_=photon.superClusterRef()->phiWidth();
   SCEtaWidth_=photon.superClusterRef()->etaWidth();
-  Mustache Must;
+  DeepSC Must;
   std::vector<unsigned int>insideMust;
   std::vector<unsigned int>outsideMust;
   std::multimap<float, unsigned int>OrderedClust;
-  Must.FillMustacheVar(PFClusters);
-  MustE_=Must.MustacheE();
-  LowClusE_=Must.LowestMustClust();
+  Must.FillDeepSCVar(PFClusters, topology, ebGeom, eeGeom, recHitsEB, recHitsEE);
+  MustE_=Must.DeepSCE();
+  LowClusE_=Must.LowestDeepClust();
   PFPhoR9Corr_=E3x3_/MustE_;
-  Must.MustacheClust(PFClusters,insideMust, outsideMust );
+  Must.DeepSCClust(PFClusters, topology, ebGeom, eeGeom, recHitsEB, recHitsEE, insideMust, outsideMust );
   for(unsigned int i=0; i<insideMust.size(); ++i){
     int index=insideMust[i];
     OrderedClust.emplace(PFClusters[index].energy(),index);

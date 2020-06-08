@@ -43,6 +43,14 @@
 
 #include "DataFormats/EgammaCandidates/interface/ConversionFwd.h"
 
+#include "Geometry/CaloTopology/interface/CaloTopology.h"
+#include "Geometry/CaloTopology/interface/CaloSubdetectorTopology.h"
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
+#include "Geometry/CaloEventSetup/interface/CaloTopologyRecord.h"
+#include "Geometry/EcalAlgo/interface/EcalBarrelGeometry.h"
+#include "Geometry/EcalAlgo/interface/EcalEndcapGeometry.h"
+
 #include <iostream>
 #include <string>
 #include <map>
@@ -105,8 +113,16 @@ class PFPhotonTranslator : public edm::stream::EDProducer<>
 
   const reco::PFCandidate & correspondingDaughterCandidate(const reco::PFCandidate & cand, const reco::PFBlockElement & pfbe) const;
 
+  edm::EDGetTokenT<EcalRecHitCollection> inputTagBarrelRecHits_;
+  edm::EDGetTokenT<EcalRecHitCollection> inputTagEndcapRecHits_;
   edm::InputTag inputTagPFCandidates_;
-  std::vector<edm::InputTag> inputTagIsoVals_;
+  std::vector<edm::InputTag> inputTagIsoVals_; 
+  const CaloGeometry *geometry_;
+  const CaloSubdetectorGeometry* ebGeom_;
+  const CaloSubdetectorGeometry* eeGeom_;
+  const CaloTopology* topology_;
+  const EcalRecHitCollection * barrelRecHits_;
+  const EcalRecHitCollection * endcapRecHits_;
   std::string PFBasicClusterCollection_;
   std::string PFPreshowerClusterCollection_;
   std::string PFSuperClusterCollection_;
@@ -115,8 +131,6 @@ class PFPhotonTranslator : public edm::stream::EDProducer<>
   std::string PFConversionCollection_;
   std::string EGPhotonCollection_;
   std::string  vertexProducer_;
-  edm::InputTag barrelEcalHits_;
-  edm::InputTag endcapEcalHits_;
   edm::InputTag hcalTowers_;
   double hOverEConeSize_;
 

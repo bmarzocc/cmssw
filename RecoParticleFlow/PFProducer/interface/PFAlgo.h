@@ -12,8 +12,8 @@
 #include "DataFormats/ParticleFlowReco/interface/PFBlock.h"
 
 // next include is necessary for inline functions. 
+#include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
-
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidateFwd.h"
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidateElectronExtra.h"
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidateElectronExtraFwd.h"
@@ -34,6 +34,14 @@
 #include "RecoParticleFlow/PFProducer/interface/PFEGammaFilters.h"
 #include "RecoParticleFlow/PFProducer/interface/PFElectronAlgo.h"
 #include "RecoParticleFlow/PFProducer/interface/PFPhotonAlgo.h"
+
+#include "Geometry/CaloTopology/interface/CaloTopology.h"
+#include "Geometry/CaloTopology/interface/CaloSubdetectorTopology.h"
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
+#include "Geometry/CaloEventSetup/interface/CaloTopologyRecord.h"
+#include "Geometry/EcalAlgo/interface/EcalBarrelGeometry.h"
+#include "Geometry/EcalAlgo/interface/EcalEndcapGeometry.h"
 
 /// \brief Particle Flow Algorithm
 /*!
@@ -157,10 +165,10 @@ class PFAlgo {
   /// reconstruct particles (full framework case)
   /// will keep track of the block handle to build persistent references,
   /// and call reconstructParticles( const reco::PFBlockCollection& blocks, PFEGammaFilters const* pfegamma )
-  void reconstructParticles( const reco::PFBlockHandle& blockHandle, PFEGammaFilters const* pfegamma );
+  void reconstructParticles( const reco::PFBlockHandle& blockHandle, PFEGammaFilters const* pfegamma, const CaloTopology *topology, const CaloSubdetectorGeometry* ebGeom, const CaloSubdetectorGeometry* eeGeom, const EcalRecHitCollection *recHitsEB, const EcalRecHitCollection *recHitsEE );
 
   /// reconstruct particles 
-  void reconstructParticles( const reco::PFBlockCollection& blocks, PFEGammaFilters const* pfegamma );
+  void reconstructParticles( const reco::PFBlockCollection& blocks, PFEGammaFilters const* pfegamma, const CaloTopology *topology, const CaloSubdetectorGeometry* ebGeom, const CaloSubdetectorGeometry* eeGeom, const EcalRecHitCollection *recHitsEB, const EcalRecHitCollection *recHitsEE );
   
   /// Check HF Cleaning
   void checkCleaning( const reco::PFRecHitCollection& cleanedHF );
@@ -221,14 +229,20 @@ class PFAlgo {
   /// process one block. can be reimplemented in more sophisticated 
   /// algorithms
   void processBlock( const reco::PFBlockRef& blockref,
-                             std::list<reco::PFBlockRef>& hcalBlockRefs, 
-                             std::list<reco::PFBlockRef>& ecalBlockRefs, PFEGammaFilters const* pfegamma );
+                     std::list<reco::PFBlockRef>& hcalBlockRefs, 
+                     std::list<reco::PFBlockRef>& ecalBlockRefs, 
+                     PFEGammaFilters const* pfegamma, 
+                     const CaloTopology *topology, 
+                     const CaloSubdetectorGeometry* ebGeom, 
+                     const CaloSubdetectorGeometry* eeGeom, 
+                     const EcalRecHitCollection *recHitsEB, 
+                     const EcalRecHitCollection *recHitsEE );
   
   /// Reconstruct a charged particle from a track
   /// Returns the index of the newly created candidate in pfCandidates_
   /// Michalis added a flag here to treat muons inside jets
   unsigned reconstructTrack( const reco::PFBlockElement& elt,bool allowLoose= false);
-
+       
   /// Reconstruct a neutral particle from a cluster. 
   /// If chargedEnergy is specified, the neutral 
   /// particle is created only if the cluster energy is significantly 

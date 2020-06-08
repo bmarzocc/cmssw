@@ -29,6 +29,14 @@
 #include "RecoParticleFlow/PFProducer/interface/PFEGammaFilters.h"
 #include "RecoParticleFlow/PFProducer/interface/PFAlgo.h"
 
+#include "Geometry/CaloTopology/interface/CaloTopology.h"
+#include "Geometry/CaloTopology/interface/CaloSubdetectorTopology.h"
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
+#include "Geometry/CaloEventSetup/interface/CaloTopologyRecord.h"
+#include "Geometry/EcalAlgo/interface/EcalBarrelGeometry.h"
+#include "Geometry/EcalAlgo/interface/EcalEndcapGeometry.h"
+
 class PFEnergyCalibrationHF;
 class GBRForest;
 
@@ -58,9 +66,18 @@ class PFProducer : public edm::stream::EDProducer<> {
 
 
   std::vector<edm::EDGetTokenT<reco::PFRecHitCollection> >  inputTagCleanedHF_;
+  edm::EDGetTokenT<EcalRecHitCollection> inputTagBarrelRecHits_;
+  edm::EDGetTokenT<EcalRecHitCollection> inputTagEndcapRecHits_;
   std::string electronOutputCol_;
   std::string electronExtraOutputCol_;
   std::string photonExtraOutputCol_;
+
+  const CaloGeometry *geometry_;
+  const CaloSubdetectorGeometry* ebGeom_;
+  const CaloSubdetectorGeometry* eeGeom_;
+  const CaloTopology* topology_;
+  const EcalRecHitCollection * barrelRecHits_;
+  const EcalRecHitCollection * endcapRecHits_;
 
   // NEW EGamma Filters
   edm::EDGetTokenT<edm::ValueMap<reco::GsfElectronRef> >inputTagValueMapGedElectrons_;

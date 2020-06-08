@@ -50,6 +50,11 @@ PFProducer::PFProducer(const edm::ParameterSet& iConfig)
 
   usePFPhotons_
     = iConfig.getParameter<bool>("usePFPhotons");    
+
+  inputTagBarrelRecHits_ 
+    = consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("barrelRecHits"));
+  inputTagEndcapRecHits_ 
+    = consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("endcapRecHits"));
   
   // **************************** !! IMPORTANT !! ************************************
   // When you code is swithed on, automatically turn off the old PFElectrons/PFPhotons. 
@@ -410,16 +415,34 @@ PFProducer::beginRun(const edm::Run & run,
     */
   } 
 
-    if(usePFPhotons_){
-      //pfAlgo_.setPFPhotonRegWeights(ReaderLC_, ReaderGC_, ReaderRes_);
-      pfAlgo_.setPFPhotonRegWeights(ReaderLCEB_,ReaderLCEE_,ReaderGCBarrel_,ReaderGCEndCapHighr9_, ReaderGCEndCapLowr9_, ReaderEcalRes_ );
-    }
+  edm::ESHandle<CaloTopology> caloTopologyHandle;
+  es.get<CaloTopologyRecord>().get(caloTopologyHandle);
+  topology_ = caloTopologyHandle.product();
+
+  edm::ESHandle<CaloGeometry> caloGeometryHandle;
+  es.get<CaloGeometryRecord>().get(caloGeometryHandle);
+  geometry_ = caloGeometryHandle.product();
+  ebGeom_ = caloGeometryHandle->getSubdetectorGeometry(DetId::Ecal, EcalBarrel);
+  eeGeom_ = caloGeometryHandle->getSubdetectorGeometry(DetId::Ecal, EcalEndcap);
+
+  if(usePFPhotons_){
+     //pfAlgo_.setPFPhotonRegWeights(ReaderLC_, ReaderGC_, ReaderRes_);
+     pfAlgo_.setPFPhotonRegWeights(ReaderLCEB_,ReaderLCEE_,ReaderGCBarrel_,ReaderGCEndCapHighr9_, ReaderGCEndCapLowr9_, ReaderEcalRes_);
+  }
 }
 
 
 void 
 PFProducer::produce(Event& iEvent, const EventSetup& iSetup)
 {
+
+  edm::Handle<EcalRecHitCollection> barrelRecHitsHandle;
+  iEvent.getByToken(inputTagBarrelRecHits_, barrelRecHitsHandle);
+  barrelRecHits_ = barrelRecHitsHandle.product();
+
+  edm::Handle<EcalRecHitCollection> endcapRecHitsHandle;
+  iEvent.getByToken(inputTagEndcapRecHits_, endcapRecHitsHandle);
+  endcapRecHits_ = endcapRecHitsHandle.product();
   LogDebug("PFProducer")<<"START event: " <<iEvent.id().event() <<" in run "<<iEvent.id().run()<<endl;
 
   //Assign the PFAlgo Parameters
@@ -441,7 +464,7 @@ PFProducer::produce(Event& iEvent, const EventSetup& iSetup)
 
   LogDebug("PFProducer")<<"particle flow is starting"<<endl;
 
-  pfAlgo_.reconstructParticles( blocks, pfegamma_.get() );
+  pfAlgo_.reconstructParticles( blocks, pfegamma_.get(), topology_, ebGeom_, eeGeom_, barrelRecHits_, endcapRecHits_ );
   
   if(verbose_) {
     ostringstream  str;
