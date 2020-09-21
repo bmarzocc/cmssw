@@ -4,8 +4,11 @@
 #include "DataFormats/ParticleFlowReco/interface/PFLayer.h"
 #include "DataFormats/ParticleFlowReco/interface/PFRecHit.h"
 #include "DataFormats/EcalDetId/interface/ESDetId.h"
+#include "DataFormats/EcalDetId/interface/EBDetId.h"
+#include "DataFormats/EcalDetId/interface/EEDetId.h"
 #include "DataFormats/HcalDetId/interface/HcalDetId.h"
 #include "RecoEcal/EgammaCoreTools/interface/Mustache.h"
+#include "RecoEcal/EgammaCoreTools/interface/DeepSC.h"
 #include "CondFormats/DataRecord/interface/ESEEIntercalibConstantsRcd.h"
 #include "CondFormats/DataRecord/interface/ESChannelStatusRcd.h"
 #include "CondFormats/ESObjects/interface/ESEEIntercalibConstants.h"
@@ -83,23 +86,84 @@ namespace {
     return x_rechits_match / x_rechits_tot > majority;
   }
 
+  std::vector<int> clusterLocalPosition(const CalibClusterPtr& cluster, const CaloSubdetectorGeometry* ebGeom_, const CaloSubdetectorGeometry* eeGeom_)
+  {
+    std::vector<int> position; // ieta,iphi,iz or ix,iy,iz 
+    position.resize(3); 
+    reco::CaloCluster caloBC(*cluster->the_ptr());
+    math::XYZPoint caloPos = caloBC.position();
+    if(cluster->the_ptr()->layer() == PFLayer::ECAL_BARREL){
+       EBDetId id(ebGeom_->getClosestCell(GlobalPoint(caloPos.x(),caloPos.y(),caloPos.z())));  
+       position[0]=id.ieta(); 
+       position[1]=id.ieta(); 
+       position[2]=0; 
+    }else if(cluster->the_ptr()->layer() == PFLayer::ECAL_ENDCAP){
+       EEDetId id(eeGeom_->getClosestCell(GlobalPoint(caloPos.x(),caloPos.y(),caloPos.z())));  
+       position[0]=id.ix(); 
+       position[1]=id.ix(); 
+       position[2]=id.zside(); 
+    }
+    return position; 
+  }
+
+  DetId clusterDetId(const CalibClusterPtr& cluster, const CaloSubdetectorGeometry* ebGeom_, const CaloSubdetectorGeometry* eeGeom_)
+  {
+    DetId clId;
+    reco::CaloCluster caloBC(*cluster->the_ptr());
+    math::XYZPoint caloPos = caloBC.position();
+    if(cluster->the_ptr()->layer() == PFLayer::ECAL_BARREL){
+       EBDetId id(ebGeom_->getClosestCell(GlobalPoint(caloPos.x(),caloPos.y(),caloPos.z())));  
+       clId = id;
+    }else if(cluster->the_ptr()->layer() == PFLayer::ECAL_ENDCAP){
+       EEDetId id(eeGeom_->getClosestCell(GlobalPoint(caloPos.x(),caloPos.y(),caloPos.z())));  
+       clId = id;
+    }
+    return clId;
+  }
+
+  double clusterZside(const CalibClusterPtr& cluster)
+  {
+    double zSide=0.;
+    if(cluster->the_ptr()->layer() == PFLayer::ECAL_ENDCAP && cluster->eta()<0.) zSide = -1.;   
+    if(cluster->the_ptr()->layer() == PFLayer::ECAL_ENDCAP && cluster->eta()>0.) zSide = +1.; 
+    return zSide;  
+  }  
+
   bool isClustered(const CalibClusterPtr& x,
-                   const CalibClusterPtr seed,
+                   const CalibClusterPtr seed, 
                    const PFECALSuperClusterAlgo::clustering_type type,
                    const bool dyn_dphi,
                    const double etawidthSuperCluster,
-                   const double phiwidthSuperCluster) {
-    const double dphi = std::abs(TVector2::Phi_mpi_pi(seed->phi() - x->phi()));
-    const bool passes_dphi = ((!dyn_dphi && dphi < phiwidthSuperCluster) ||
-                              (dyn_dphi && reco::MustacheKernel::inDynamicDPhiWindow(
-                                               seed->eta(), seed->phi(), x->energy_nocalib(), x->eta(), x->phi())));
+                   const double phiwidthSuperCluster,
+                   reco::DeepSC* deepSuperCluster,
+                   const CaloTopology *topology, 
+                   const CaloSubdetectorGeometry* ebGeom, 
+                   const CaloSubdetectorGeometry* eeGeom, 
+                   const EcalRecHitCollection* recHitsEB, 
+                   const EcalRecHitCollection* recHitsEE)
+  { 
+    const double dphi = std::abs(TVector2::Phi_mpi_pi(seed->phi() - x->phi()));        
+    const bool passes_dphi = 
+      ( (!dyn_dphi && dphi < phiwidthSuperCluster ) || 
+        (dyn_dphi && reco::MustacheKernel::inDynamicDPhiWindow(seed->eta(),
+                                                               seed->phi(),
+                                                               x->energy_nocalib(),
+                                                               x->eta(),
+                                                               x->phi()) ) );
 
-    if (type == PFECALSuperClusterAlgo::kBOX) {
-      return (std::abs(seed->eta() - x->eta()) < etawidthSuperCluster && passes_dphi);
+    if(type == PFECALSuperClusterAlgo::kBOX) {
+      return ( std::abs(seed->eta()-x->eta()) < etawidthSuperCluster && passes_dphi);
     }
-    if (type == PFECALSuperClusterAlgo::kMustache) {
-      return (passes_dphi &&
-              reco::MustacheKernel::inMustache(seed->eta(), seed->phi(), x->energy_nocalib(), x->eta(), x->phi()));
+    if(type == PFECALSuperClusterAlgo::kMustache) {
+      return ( passes_dphi && reco::MustacheKernel::inMustache(seed->eta(), 
+                                                               seed->phi(),
+                                                               x->energy_nocalib(),
+                                                               x->eta(),
+                                                               x->phi()) );
+    }
+    if(type == PFECALSuperClusterAlgo::kDeepSC) { 
+       if(*seed->the_ptr() == *x->the_ptr()) return true; //seed clustered by construction!
+       else return deepSuperCluster->InSuperCluster((reco::CaloCluster*)(*seed).the_ptr().get(), (reco::CaloCluster*)x->the_ptr().get(), topology, ebGeom, eeGeom, recHitsEB, recHitsEE);                       
     }
     return false;
   }
@@ -125,7 +189,7 @@ void PFECALSuperClusterAlgo::setTokens(const edm::ParameterSet& iConfig, edm::Co
     regr_->setTokens(regconf, cc);
   }
 
-  if (isOOTCollection_) {  // OOT photons only
+  if (isOOTCollection_ ||  _clustype == PFECALSuperClusterAlgo::kDeepSC) { // OOT photons or DeepSC
     inputTagBarrelRecHits_ = cc.consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("barrelRecHits"));
     inputTagEndcapRecHits_ = cc.consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("endcapRecHits"));
   }
@@ -143,6 +207,17 @@ void PFECALSuperClusterAlgo::update(const edm::EventSetup& setup) {
   edm::ESHandle<ESChannelStatus> esChannelStatusHandle_;
   setup.get<ESChannelStatusRcd>().get(esChannelStatusHandle_);
   channelStatus_ = esChannelStatusHandle_.product();
+
+  edm::ESHandle<CaloGeometry> caloGeometryHandle_;
+  setup.get<CaloGeometryRecord>().get(caloGeometryHandle_);
+  geometry_ = caloGeometryHandle_.product();
+  ebGeom_ = caloGeometryHandle_->getSubdetectorGeometry(DetId::Ecal, EcalBarrel);
+  eeGeom_ = caloGeometryHandle_->getSubdetectorGeometry(DetId::Ecal, EcalEndcap);
+  esGeom_ = caloGeometryHandle_->getSubdetectorGeometry(DetId::Ecal, EcalPreshower); 
+
+  edm::ESHandle<CaloTopology> caloTopologyHandle_;
+  setup.get<CaloTopologyRecord>().get(caloTopologyHandle_);
+  topology_ = caloTopologyHandle_.product(); 
 }
 
 void PFECALSuperClusterAlgo::loadAndSortPFClusters(const edm::Event& iEvent) {
@@ -206,12 +281,12 @@ void PFECALSuperClusterAlgo::loadAndSortPFClusters(const edm::Event& iEvent) {
   std::sort(_clustersEE.begin(), _clustersEE.end(), greaterByEt);
 
   // set recHit collections for OOT photons
-  if (isOOTCollection_) {
+  if (isOOTCollection_ ||  _clustype == PFECALSuperClusterAlgo::kDeepSC) {
     edm::Handle<EcalRecHitCollection> barrelRecHitsHandle;
     iEvent.getByToken(inputTagBarrelRecHits_, barrelRecHitsHandle);
     if (!barrelRecHitsHandle.isValid()) {
       throw cms::Exception("PFECALSuperClusterAlgo")
-          << "If you use OOT photons, need to specify proper barrel rec hit collection";
+          << "If you use OOT photons or DeepSC, need to specify proper barrel rec hit collection";
     }
     barrelRecHits_ = barrelRecHitsHandle.product();
 
@@ -219,9 +294,11 @@ void PFECALSuperClusterAlgo::loadAndSortPFClusters(const edm::Event& iEvent) {
     iEvent.getByToken(inputTagEndcapRecHits_, endcapRecHitsHandle);
     if (!endcapRecHitsHandle.isValid()) {
       throw cms::Exception("PFECALSuperClusterAlgo")
-          << "If you use OOT photons, need to specify proper endcap rec hit collection";
+          << "If you use OOT photons or DeepSC, need to specify proper endcap rec hit collection";
     }
     endcapRecHits_ = endcapRecHitsHandle.product();
+
+    if(_clustype == PFECALSuperClusterAlgo::kDeepSC) deepSuperCluster_ = new reco::DeepSC();
   }
 }
 
@@ -267,8 +344,8 @@ void PFECALSuperClusterAlgo::buildSuperCluster(CalibClusterPtr& seed, CalibClust
     default:
       break;
   }
-  auto isClusteredWithSeed =
-      std::bind(isClustered, _1, seed, _clustype, useDynamicDPhi_, etawidthSuperCluster, phiwidthSuperCluster);
+  
+  auto isClusteredWithSeed = std::bind(isClustered, _1, seed,_clustype,useDynamicDPhi_, etawidthSuperCluster, phiwidthSuperCluster, deepSuperCluster_, topology_, ebGeom_, eeGeom_, barrelRecHits_, endcapRecHits_);
   auto matchesSeedByRecHit = std::bind(isLinkedByRecHit, _1, seed, satelliteThreshold_, fractionForMajority_, 0.1, 0.2);
 
   // this function shuffles the list of clusters into a list
