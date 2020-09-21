@@ -10,6 +10,8 @@
 <use name="RecoLocalCalo/EcalRecAlgos"/>
 <use name="Geometry/Records"/>
 <use name="CalibCalorimetry/EcalLaserCorrection"/>
+<use name="PhysicsTools/TensorFlow"/>
+<use name="DataFormats/ParticleFlowReco"/>
 <use name="clhep"/>
 <export>
   <lib name="1"/>
