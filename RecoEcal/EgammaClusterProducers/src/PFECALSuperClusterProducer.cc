@@ -37,6 +37,7 @@ using namespace edm;
 namespace {
   const std::string ClusterType__BOX("Box");
   const std::string ClusterType__Mustache("Mustache");
+  const std::string ClusterType__DeepSC("DeepSC");
 
   const std::string EnergyWeight__Raw("Raw");
   const std::string EnergyWeight__CalibratedNoPS("CalibratedNoPS");
@@ -58,6 +59,8 @@ PFECALSuperClusterProducer::PFECALSuperClusterProducer(const edm::ParameterSet& 
     _theclusteringtype = PFECALSuperClusterAlgo::kBOX;
   } else if (_typename == ClusterType__Mustache) {
     _theclusteringtype = PFECALSuperClusterAlgo::kMustache;
+  } else if ( _typename == ClusterType__DeepSC ) {
+    _theclusteringtype = PFECALSuperClusterAlgo::kDeepSC;
   } else {
     throw cms::Exception("InvalidClusteringType") << "You have not chosen a valid clustering type,"
                                                   << " please choose from \"Box\" or \"Mustache\"!";
@@ -332,8 +335,8 @@ void PFECALSuperClusterProducer::fillDescriptions(edm::ConfigurationDescriptions
   desc.add<double>("thresh_PFClusterES", 0.0);
   desc.add<bool>("seedThresholdIsET", true);
   desc.add<bool>("isOOTCollection", false);
-  desc.add<edm::InputTag>("barrelRecHits", edm::InputTag("ecalRecHit", "EcalRecHitsEE"));
-  desc.add<edm::InputTag>("endcapRecHits", edm::InputTag("ecalRecHit", "EcalRecHitsEB"));
+  desc.add<edm::InputTag>("barrelRecHits", edm::InputTag("ecalRecHit", "EcalRecHitsEB"));
+  desc.add<edm::InputTag>("endcapRecHits", edm::InputTag("ecalRecHit", "EcalRecHitsEE"));
   desc.add<std::string>("PFSuperClusterCollectionEndcapWithPreshower",
                         "particleFlowSuperClusterECALEndcapWithPreshower");
   desc.add<bool>("dropUnseedable", false);

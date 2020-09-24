@@ -1,8 +1,10 @@
 <use   name="DataFormats/EcalRecHit"/>
 <use   name="DataFormats/EgammaReco"/>
 <use   name="DataFormats/Math"/>
+<use   name="DataFormats/ParticleFlowReco"/>
 <use   name="FWCore/Framework"/>
 <use   name="FWCore/Utilities"/>
+<use   name="FWCore/ParameterSet"/>
 <use   name="FWCore/MessageLogger"/>
 <use   name="Geometry/CaloGeometry"/>
 <use   name="Geometry/CaloTopology"/>
@@ -10,6 +12,7 @@
 <use   name="RecoLocalCalo/EcalRecAlgos"/>
 <use   name="Geometry/Records"/>
 <use   name="CalibCalorimetry/EcalLaserCorrection"/>
+<use   name="PhysicsTools/TensorFlow"/>
 <use   name="clhep"/>
 <export>
   <lib   name="1"/>
