@@ -168,6 +168,7 @@ private:
   const edm::InputTag simVertexLabel_;
   edm::Handle<std::vector<SimTrack>> hSimTracks;
   edm::Handle<std::vector<SimVertex>> hSimVertices;
+  edm::Handle<std::vector<reco::GenParticle> > hGenParticles;
 
   std::vector<edm::InputTag> collectionTags_;
   edm::InputTag genParticleLabel_;
@@ -483,17 +484,19 @@ void CaloTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup cons
     std::sort(totalEnergies->begin(), totalEnergies->end());
     event.put(std::move(totalEnergies), "MergedCaloTruth");
   } else {
-    for (auto &sc : *(output_.pSimClusters)) {
+    for (auto& sc : *(output_.pSimClusters)) {
       auto hitsAndEnergies = sc.hits_and_fractions();
+      for (auto& hAndE : hitsAndEnergies)
+        sc.addRecHitAndEnergy(hAndE.first, hAndE.second); 
       sc.clearHitsAndFractions();
-      for (auto &hAndE : hitsAndEnergies) {
+      for (auto& hAndE : hitsAndEnergies) {
         const float totalenergy = m_detIdToTotalSimEnergy[hAndE.first];
         float fraction = 0.;
         if (totalenergy > 0)
           fraction = hAndE.second / totalenergy;
         else
-          edm::LogWarning(messageCategory_)
-              << "TotalSimEnergy for hit " << hAndE.first << " is 0! The fraction for this hit cannot be computed.";
+          edm::LogWarning(messageCategory_) << "TotalSimEnergy for hit " << hAndE.first
+                                            << " is 0! The fraction for this hit cannot be computed.";
         sc.addRecHitAndFraction(hAndE.first, fraction);
       }
     }
@@ -504,7 +507,10 @@ void CaloTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup cons
 
   // now fill the calo particles
   for (unsigned i = 0; i < output_.pCaloParticles->size(); ++i) {
-    auto &cp = (*output_.pCaloParticles)[i];
+    auto& cp = (*output_.pCaloParticles)[i];
+    auto& g4Tracks_tmp = cp.g4Tracks();
+    edm::Ref<std::vector<reco::GenParticle> > ref_gen(hGenParticles, g4Tracks_tmp[0].genpartIndex()-1);
+    cp.addGenParticle(ref_gen);
     for (unsigned j = m_caloParticles.sc_start_[i]; j < m_caloParticles.sc_stop_[i]; ++j) {
       edm::Ref<SimClusterCollection> ref(scHandle, j);
       cp.addSimCluster(ref);
@@ -523,7 +529,6 @@ template <class T>
 void CaloTruthAccumulator::accumulateEvent(const T &event,
                                            const edm::EventSetup &setup,
                                            const edm::Handle<edm::HepMCProduct> &hepMCproduct) {
-  edm::Handle<std::vector<reco::GenParticle>> hGenParticles;
   edm::Handle<std::vector<int>> hGenParticleIndices;
 
   event.getByLabel(simTrackLabel_, hSimTracks);
