@@ -132,14 +132,14 @@ namespace reco {
     if(PFLayer::fromCaloID(seed->caloID()) == PFLayer::ECAL_ENDCAP && seed->eta()>0.) zSide = +1.; 
 
     NNclusterVars_[0] = seed->eta();
-    NNclusterVars_[1] = seed->phi();
-    NNclusterVars_[2] = zSide;
-    NNclusterVars_[3] = seed->energy();
-    NNclusterVars_[4] = seed->energy()/TMath::CosH(seed->eta());
-    NNclusterVars_[5] = DeltaEta(seed->eta(), cluster->eta());  
-    NNclusterVars_[6] = DeltaPhi(seed->phi(), cluster->phi()); 
-    NNclusterVars_[7] = cluster->energy();
-    NNclusterVars_[8] = cluster->energy()/TMath::CosH(cluster->eta());
+    //NNclusterVars_[1] = seed->phi();
+    NNclusterVars_[1] = zSide;
+    NNclusterVars_[2] = seed->energy();
+    NNclusterVars_[3] = seed->energy()/TMath::CosH(seed->eta());
+    NNclusterVars_[4] = DeltaEta(seed->eta(), cluster->eta());  
+    NNclusterVars_[5] = DeltaPhi(seed->phi(), cluster->phi()); 
+    NNclusterVars_[6] = cluster->energy();
+    NNclusterVars_[7] = cluster->energy()/TMath::CosH(cluster->eta());
     
     full5x5_locCov_.clear();
     const reco::BasicCluster seedBC_(*seed);  
@@ -151,14 +151,14 @@ namespace reco {
             noZS::EcalClusterTools::eRight(seedBC_, recHitsEB, topology) +
             noZS::EcalClusterTools::eBottom(seedBC_, recHitsEB, topology) +
             noZS::EcalClusterTools::eLeft(seedBC_, recHitsEB, topology);  
-       NNclusterVars_[9] = noZS::EcalClusterTools::e3x3(seedBC_, recHitsEB, topology)/seed->energy(); //r9
-       NNclusterVars_[10] = sqrt(full5x5_locCov_[0]); //sigmaietaieta
-       NNclusterVars_[11] = full5x5_locCov_[1]; //sigmaietaiphi
-       NNclusterVars_[12] = (!edm::isFinite(full5x5_locCov_[2])) ? 0. : sqrt(full5x5_locCov_[2]); //sigmaiphiiphi     
-       NNclusterVars_[13] = 1.-e4/e1; //swiss_cross      
-       NNclusterVars_[14] = seed->hitsAndFractions().size(); //nXtals 
-       NNclusterVars_[15] = widths_.first; //etaWidth 
-       NNclusterVars_[16] = widths_.second; //phiWidth 
+       NNclusterVars_[8] = noZS::EcalClusterTools::e3x3(seedBC_, recHitsEB, topology)/seed->energy(); //r9
+       NNclusterVars_[9] = sqrt(full5x5_locCov_[0]); //sigmaietaieta
+       NNclusterVars_[10] = full5x5_locCov_[1]; //sigmaietaiphi
+       NNclusterVars_[11] = (!edm::isFinite(full5x5_locCov_[2])) ? 0. : sqrt(full5x5_locCov_[2]); //sigmaiphiiphi     
+       NNclusterVars_[12] = 1.-e4/e1; //swiss_cross      
+       NNclusterVars_[13] = seed->hitsAndFractions().size(); //nXtals 
+       NNclusterVars_[14] = widths_.first; //etaWidth 
+       NNclusterVars_[15] = widths_.second; //phiWidth 
     }else if(PFLayer::fromCaloID(seed->caloID()) == PFLayer::ECAL_ENDCAP){
        full5x5_locCov_ = noZS::EcalClusterTools::localCovariances(seedBC_, recHitsEE, topology);
        widths_ = ComputeCovariances(seedBC_, recHitsEE, eeGeom); 
@@ -167,14 +167,14 @@ namespace reco {
             noZS::EcalClusterTools::eRight(seedBC_, recHitsEE, topology) +
             noZS::EcalClusterTools::eBottom(seedBC_, recHitsEE, topology) +
             noZS::EcalClusterTools::eLeft(seedBC_, recHitsEE, topology);     
-       NNclusterVars_[9] = noZS::EcalClusterTools::e3x3(seedBC_, recHitsEE, topology)/seed->energy(); //r9
-       NNclusterVars_[10] = sqrt(full5x5_locCov_[0]); //sigmaietaieta
-       NNclusterVars_[11] = full5x5_locCov_[1]; //sigmaietaiphi
-       NNclusterVars_[12] = (!edm::isFinite(full5x5_locCov_[2])) ? 0. : sqrt(full5x5_locCov_[2]); //sigmaiphiiphi     
-       NNclusterVars_[13] = 1.-e4/e1; //swiss_cross      
-       NNclusterVars_[14] = seed->hitsAndFractions().size(); //nXtals
-       NNclusterVars_[15] = widths_.first; //etaWidth 
-       NNclusterVars_[16] = widths_.second; //phiWidth    
+       NNclusterVars_[8] = noZS::EcalClusterTools::e3x3(seedBC_, recHitsEE, topology)/seed->energy(); //r9
+       NNclusterVars_[9] = sqrt(full5x5_locCov_[0]); //sigmaietaieta
+       NNclusterVars_[10] = full5x5_locCov_[1]; //sigmaietaiphi
+       NNclusterVars_[11] = (!edm::isFinite(full5x5_locCov_[2])) ? 0. : sqrt(full5x5_locCov_[2]); //sigmaiphiiphi     
+       NNclusterVars_[12] = 1.-e4/e1; //swiss_cross      
+       NNclusterVars_[13] = seed->hitsAndFractions().size(); //nXtals
+       NNclusterVars_[14] = widths_.first; //etaWidth 
+       NNclusterVars_[15] = widths_.second; //phiWidth    
     }
      
     full5x5_locCov_.clear(); 
@@ -187,14 +187,14 @@ namespace reco {
             noZS::EcalClusterTools::eRight(caloBC_, recHitsEB, topology) +
             noZS::EcalClusterTools::eBottom(caloBC_, recHitsEB, topology) +
             noZS::EcalClusterTools::eLeft(caloBC_, recHitsEB, topology);   
-       NNclusterVars_[17] = noZS::EcalClusterTools::e3x3(caloBC_, recHitsEB, topology)/cluster->energy(); //r9
-       NNclusterVars_[18] = sqrt(full5x5_locCov_[0]); //sigmaietaieta
-       NNclusterVars_[19] = full5x5_locCov_[1]; //sigmaietaiphi
-       NNclusterVars_[20] = (!edm::isFinite(full5x5_locCov_[2])) ? 0. : sqrt(full5x5_locCov_[2]); //sigmaiphiiphi     
-       NNclusterVars_[21] = 1.-e4/e1; //swiss_cross      
-       NNclusterVars_[22] = cluster->hitsAndFractions().size(); //nXtals 
-       NNclusterVars_[23] = widths_.first; //etaWidth 
-       NNclusterVars_[24] = widths_.second; //phiWidth    
+       NNclusterVars_[16] = noZS::EcalClusterTools::e3x3(caloBC_, recHitsEB, topology)/cluster->energy(); //r9
+       NNclusterVars_[17] = sqrt(full5x5_locCov_[0]); //sigmaietaieta
+       NNclusterVars_[18] = full5x5_locCov_[1]; //sigmaietaiphi
+       NNclusterVars_[19] = (!edm::isFinite(full5x5_locCov_[2])) ? 0. : sqrt(full5x5_locCov_[2]); //sigmaiphiiphi     
+       NNclusterVars_[20] = 1.-e4/e1; //swiss_cross      
+       NNclusterVars_[21] = cluster->hitsAndFractions().size(); //nXtals 
+       NNclusterVars_[22] = widths_.first; //etaWidth 
+       NNclusterVars_[23] = widths_.second; //phiWidth    
     }else if(PFLayer::fromCaloID(cluster->caloID()) == PFLayer::ECAL_ENDCAP){
        full5x5_locCov_ = noZS::EcalClusterTools::localCovariances(caloBC_, recHitsEE, topology);
        widths_ = ComputeCovariances(caloBC_, recHitsEE, eeGeom);  
@@ -203,14 +203,14 @@ namespace reco {
             noZS::EcalClusterTools::eRight(caloBC_, recHitsEE, topology) +
             noZS::EcalClusterTools::eBottom(caloBC_, recHitsEE, topology) +
             noZS::EcalClusterTools::eLeft(caloBC_, recHitsEE, topology);
-       NNclusterVars_[17] = noZS::EcalClusterTools::e3x3(caloBC_, recHitsEE, topology)/cluster->energy(); //r9
-       NNclusterVars_[18] = sqrt(full5x5_locCov_[0]); //sigmaietaieta
-       NNclusterVars_[19] = full5x5_locCov_[1]; //sigmaietaiphi
-       NNclusterVars_[20] = (!edm::isFinite(full5x5_locCov_[2])) ? 0. : sqrt(full5x5_locCov_[2]); //sigmaiphiiphi     
-       NNclusterVars_[21] = 1.-e4/e1; //swiss_cross      
-       NNclusterVars_[22] = cluster->hitsAndFractions().size(); //nXtals
-       NNclusterVars_[23] = widths_.first; //etaWidth 
-       NNclusterVars_[24] = widths_.second; //phiWidth    
+       NNclusterVars_[16] = noZS::EcalClusterTools::e3x3(caloBC_, recHitsEE, topology)/cluster->energy(); //r9
+       NNclusterVars_[17] = sqrt(full5x5_locCov_[0]); //sigmaietaieta
+       NNclusterVars_[18] = full5x5_locCov_[1]; //sigmaietaiphi
+       NNclusterVars_[19] = (!edm::isFinite(full5x5_locCov_[2])) ? 0. : sqrt(full5x5_locCov_[2]); //sigmaiphiiphi     
+       NNclusterVars_[20] = 1.-e4/e1; //swiss_cross      
+       NNclusterVars_[21] = cluster->hitsAndFractions().size(); //nXtals
+       NNclusterVars_[22] = widths_.first; //etaWidth 
+       NNclusterVars_[23] = widths_.second; //phiWidth    
     } 
   }
 
