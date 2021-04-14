@@ -47,6 +47,7 @@ premix_stage1.toModify(caloParticles, premixStage1 = True)
 from Configuration.ProcessModifiers.run3_ecalclustering_cff import run3_ecalclustering
 run3_ecalclustering.toModify(
         caloParticles,
+        doHGCAL = cms.bool(False),
 	simHitCollections = cms.PSet(
             ecal = cms.VInputTag(
                 cms.InputTag('g4SimHits','EcalHitsEE'),
