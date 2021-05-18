@@ -81,7 +81,7 @@ void ReducedCaloParticleProducer::produce( Event &evt, const EventSetup & )
 
         } else {
 
-            if(calo->g4Tracks()[0].eventId().bunchCrossing()!=0 && savePU_) continue; 
+            if((calo->g4Tracks()[0].eventId().event()==0 || calo->g4Tracks()[0].eventId().bunchCrossing()!=0) && savePU_) continue; 
             if(calo->g4Tracks()[0].eventId().bunchCrossing()==0 && saveOOTPU_) continue;  
 
             const auto& simClusters = calo->simClusters();
