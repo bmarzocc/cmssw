@@ -57,3 +57,10 @@ fastSim.toReplaceWith(DigiToRawTask, DigiToRawTask.copyAndExclude([siPixelRawDat
 
 from Configuration.Eras.Modifier_phase2_ecal_devel_cff import phase2_ecal_devel
 phase2_ecal_devel.toReplaceWith(DigiToRawTask, DigiToRawTask.copyAndExclude([esDigiToRaw]))
+
+from Configuration.ProcessModifiers.run3_ecalclustering_cff import run3_ecalclustering
+from SimGeneral.CaloAnalysis.reduceCaloParticles_cfi import *
+_calo_DigiToRawTask = DigiToRawTask.copy()
+_calo_DigiToRawTask.add(cms.Task(signalCaloParticles, reducedCaloParticlesPU, reducedCaloParticlesOOTPU))
+run3_ecalclustering.toReplaceWith(DigiToRawTask, _calo_DigiToRawTask)
+
