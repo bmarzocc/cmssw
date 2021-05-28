@@ -4,6 +4,7 @@
 #include "GeneratorInterface/GenFilters/plugins/PythiaDauFilter.h"
 #include "GeneratorInterface/GenFilters/plugins/PythiaProbeFilter.h"
 #include "GeneratorInterface/GenFilters/plugins/PythiaFilterGammaGamma.h"
+#include "GeneratorInterface/GenFilters/plugins/PythiaFilterEMEnrich.h"
 #include "GeneratorInterface/GenFilters/plugins/MCPdgIndexFilter.h"
 #include "GeneratorInterface/GenFilters/plugins/MCSingleParticleFilter.h"
 #include "GeneratorInterface/GenFilters/plugins/MCParticlePairFilter.h"
@@ -15,6 +16,7 @@ DEFINE_FWK_MODULE(PythiaFilter);
 DEFINE_FWK_MODULE(PythiaDauFilter);
 DEFINE_FWK_MODULE(PythiaProbeFilter);
 DEFINE_FWK_MODULE(PythiaFilterGammaGamma);
+DEFINE_FWK_MODULE(PythiaFilterEMEnrich);
 DEFINE_FWK_MODULE(MCPdgIndexFilter);
 DEFINE_FWK_MODULE(MCSingleParticleFilter);
 DEFINE_FWK_MODULE(MCParticlePairFilter);
