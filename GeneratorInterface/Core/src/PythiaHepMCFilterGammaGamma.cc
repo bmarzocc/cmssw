@@ -107,7 +107,7 @@ bool PythiaHepMCFilterGammaGamma::filter(const HepMC::GenEvent* myGenEvent) {
 
   // the candidates (four momenta) formed from the
   // seed electrons/photons and nearby electrons/photons
-  std::vector<TLorentzVector> candidate, candidateMother, genMother, genPairs;
+  std::vector<TLorentzVector> candidate;
 
   // these are filled but then not used afterwards (could be removed)
   std::vector<TLorentzVector> candidateNarrow, candidateSeed;
@@ -119,7 +119,7 @@ bool PythiaHepMCFilterGammaGamma::filter(const HepMC::GenEvent* myGenEvent) {
   int first_different_id;
 
   for (itSeed = seeds.begin(); itSeed != seeds.end(); ++itSeed) {
-    TLorentzVector energy, narrowCone, temp1, temp2, temp3, temp4, tempseed;
+    TLorentzVector energy, narrowCone, temp1, temp2, tempseed;
 
     tempseed.SetXYZM((*itSeed)->momentum().px(), (*itSeed)->momentum().py(), (*itSeed)->momentum().pz(), 0);
     for (auto itEn = egamma.begin(); itEn != egamma.end(); ++itEn) {
@@ -158,17 +158,6 @@ bool PythiaHepMCFilterGammaGamma::filter(const HepMC::GenEvent* myGenEvent) {
             counter++;
         }
 
-        //look for the first mother
-        mom = (*itSeed);
-        while (mom!=nullptr) {
-          const GenParticle* mother = mom->production_vertex() && mom->production_vertex()->particles_in_const_begin() != mom->production_vertex()->particles_in_const_end() ? *(mom->production_vertex()->particles_in_const_begin()) : nullptr;   
-          if (mother == nullptr) break;
-          mom = mother;
-        }
-        //std::cout << "Candidate mother: " << mom->pdg_id() << " - " << mom->status() << std::endl;
-        temp3.SetPtEtaPhiM(mom->momentum().perp(), mom->momentum().eta(), mom->momentum().phi(), mom->momentum().m());
-        temp4.SetPtEtaPhiM(mom->momentum().perp(), -mom->momentum().eta(), -mom->momentum().phi(), mom->momentum().m()); 
-
         if (acceptPrompts) {
           if ((*itSeed)->momentum().perp() > promptPtThreshold) {
             // check if *itSeed is a prompt particle
@@ -203,8 +192,6 @@ bool PythiaHepMCFilterGammaGamma::filter(const HepMC::GenEvent* myGenEvent) {
     candidateSeed.push_back(tempseed);
     candidateNarrow.push_back(narrowCone);
     nTracks.push_back(counter);
-    if(temp3.DeltaR(tempseed)<temp4.DeltaR(tempseed)) candidateMother.push_back(temp3);
-    else candidateMother.push_back(temp4);
   }
 
   if (candidate.size() < 2)
@@ -219,7 +206,6 @@ bool PythiaHepMCFilterGammaGamma::filter(const HepMC::GenEvent* myGenEvent) {
   //----------
 
   int i1, i2;
-  int nPairs = 0;
   for (unsigned int i = 0; i < candidate.size() - 1; ++i) {
     if (candidate[i].Energy() < energyCut)
       continue;
@@ -263,12 +249,9 @@ bool PythiaHepMCFilterGammaGamma::filter(const HepMC::GenEvent* myGenEvent) {
       if (minvMax.M() > invMassMax)
         continue;
 
-      if(candidateMother[i]==candidateMother[j] && std::find(genPairs.begin(), genPairs.end(), candidateMother[i]) == genPairs.end()) genPairs.push_back(candidateMother[i]);
+      accepted = true;
     }
   }
 
-  //std::cout << "PythiaHepMCFilterGammaGamma: nPairs = " << genPairs.size() << std::endl;
-  if(genPairs.size()>3) accepted = true;
- 
   return accepted;
 }
