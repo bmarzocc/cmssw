@@ -1,14 +1,16 @@
 import FWCore.ParameterSet.Config as cms
 
 from RecoEcal.EgammaClusterProducers.particleFlowSuperClusterECALMustache_cfi import particleFlowSuperClusterECALMustache as _particleFlowSuperClusterECALMustache
+from RecoEcal.EgammaClusterProducers.particleFlowSuperClusterECALDeepSC_cfi import particleFlowSuperClusterECALDeepSC as _particleFlowSuperClusterECALDeepSC
 
 # create the EcalMustacheSCParameters record on the fly
 from RecoEcal.EgammaCoreTools.EcalMustacheSCParametersESProducer_cff import *
 # create the EcalSCDynamicDPhiParameters record on the fly
 from RecoEcal.EgammaCoreTools.EcalSCDynamicDPhiParametersESProducer_cff import *
 
-# define the default ECAL clustering (Mustache or Box)
+# define the default ECAL clustering (Mustache or Box or DeepSC)
 particleFlowSuperClusterECAL = _particleFlowSuperClusterECALMustache.clone()
+particleFlowDeepSuperClusterECAL = _particleFlowSuperClusterECALDeepSC.clone()
 
 from Configuration.ProcessModifiers.pp_on_AA_cff import pp_on_AA
 pp_on_AA.toModify(particleFlowSuperClusterECAL, useDynamicDPhiWindow = False)
