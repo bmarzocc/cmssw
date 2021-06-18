@@ -157,7 +157,7 @@ namespace {
     }
     if(type == PFECALSuperClusterAlgo::kDeepSC) { 
        if(*seed->the_ptr() == *x->the_ptr()) return true; //seed clustered by construction!
-       else return deepSuperCluster->InSuperCluster((reco::CaloCluster*)(*seed).the_ptr().get(), (reco::CaloCluster*)x->the_ptr().get(), topology, ebGeom, eeGeom, recHitsEB, recHitsEE);           
+       else return deepSuperCluster->InSuperCluster((*seed).the_ptr().get(), x->the_ptr().get(), topology, ebGeom, eeGeom, recHitsEB, recHitsEE);           
     }
     return false;
   }
@@ -327,21 +327,11 @@ void PFECALSuperClusterAlgo::buildAllSuperClusters(CalibClusterPtrVector& cluste
       // make sure only seeds appear at the front of the list of clusters
       auto last_seed = std::stable_partition(clusters.begin(),clusters.end(),seedable);
       
-      std::vector<double> meanVals_ = std::vector<double>({0.,  -7.09402501e-04, -1.27142875e-04,  1.30375508e+00,  5.67249500e-01, 
-1.92096066e+00,  1.31476120e-02,  1.62948213e-05,  1.42948806e-02,
-5.92920497e-01,  1.49597644e+00,  3.36213188e-03,  3.06446267e-03, 
-6.84241156e-03,  1.62242679e-03,  5.81495577e+01,  2.57215845e+01, 
-1.00772582e+00,  1.35803461e-02, -4.29317013e-06,  1.71072024e-02,
-4.90466869e-01,  5.10511982e+00,  8.82101138e-03,  1.04095965e-02});
-      std::vector<double> stdVals_ = std::vector<double>({1.,  1.10279784e-01, 3.30488055e-01, 2.62605247e+00, 1.16284769e+00,
-7.81094814e+00, 1.70392176e-02, 3.05995567e-04, 1.80176053e-02,
-1.99316624e+00, 1.88845046e+00, 4.12315715e-03, 4.79639033e-03,
-1.31333380e+00, 5.06988411e-01, 9.21157365e+01, 2.98580765e+01, 
-1.17047757e-01, 1.11969442e-02, 1.86572967e-04, 1.31036359e-02,
-4.01511744e-01, 5.67007350e+00, 6.14304203e-03, 7.24808860e-03});
+      std::vector<double> meanVals_ = std::vector<double>({0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.});
+      std::vector<double> stdVals_ = std::vector<double>({1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.});
 
       EcalClustersGraph cls_graph (clusters, std::distance(clusters.begin(), last_seed), topology_, ebGeom_, eeGeom_, barrelRecHits_, endcapRecHits_, &meanVals_, &stdVals_);
-      cls_graph.initWindows(0.3, 0.7);
+      cls_graph.initWindows();
       cls_graph.fillVariables();
       cls_graph.clearWindows();
   }

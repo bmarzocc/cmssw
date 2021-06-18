@@ -66,22 +66,26 @@ private:
    const EcalRecHitCollection* recHitsEE_;
    const std::vector<double>* meanVals_;
    const std::vector<double>* stdVals_;
-   std::vector<float> full5x5_locCov_;
+   std::vector<float> locCov_;
    std::pair<double,double> widths_;
    std::vector<double> showerShapes_;
    std::vector<double> NNclusterVars_;
-   std::vector<std::vector<std::vector<double>>> NNwindowVars_;
+   std::vector<std::vector<double>> NNclusterHits_; 
+   std::vector<std::vector<std::pair<std::vector<double>,std::vector<std::vector<double>>>>> NNwindowVars_;
 
 public:
 
    EcalClustersGraph(CalibratedClusterPtrVector clusters, int nSeeds, const CaloTopology *topology, const CaloSubdetectorGeometry* ebGeom, const CaloSubdetectorGeometry* eeGeom, const EcalRecHitCollection *recHitsEB, const EcalRecHitCollection *recHitsEE, const std::vector<double>* meanVals, const std::vector<double>* stdVals);
 
+   std::vector<int> clusterPosition(const CaloCluster* cluster); 
    double deltaPhi(double seed_phi, double cluster_phi);
-   double deltaEta(double seed_eta, double cluster_eta); 
+   double deltaEta(double seed_eta, double cluster_eta);  
+   std::vector<double> dynamicWindow(double seedEta);
    std::pair<double,double> computeCovariances(const CaloCluster* cluster);
-   std::vector<double> computeShowerShapes(const CaloCluster* cluster);
+   std::vector<double> computeShowerShapes(const CaloCluster* cluster, bool full5x5);
    void computeVariables(const CaloCluster* seed, const CaloCluster* cluster);
-   void initWindows(double etaWidth, double phiWidth);
+   void fillHits(const CaloCluster* cluster);
+   void initWindows();
    void clearWindows();
    void fillVariables();
 
