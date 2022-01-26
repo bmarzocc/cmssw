@@ -61,7 +61,6 @@ private:
 
   /** maximum difference in phi and eta for which other electrons/photons
       are added to seeds to form candidates.
-
       Note that electrons/photons are accepted if they are within the cone
       specified by dRSeedMax or if they are within the rectangular region
       specified by (dPhiSeedMax, dEtaSeedMax). */
