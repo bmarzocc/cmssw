@@ -7,8 +7,9 @@ import FWCore.ParameterSet.Config as cms
 from RecoEcal.EgammaClusterProducers.particleFlowSuperClusterECAL_cff import *
 # Producer for energy corrections
 #from RecoEcal.EgammaClusterProducers.correctedDynamicHybridSuperClusters_cfi import *
-# PFECAL super clusters, either hybrid-clustering clone (Box) or mustache.
-particleFlowSuperClusteringTask = cms.Task(particleFlowSuperClusterECAL)
+# PFECAL super clusters, either hybrid-clustering clone (Box) or mustache or deepSC.
+#particleFlowSuperClusteringTask = cms.Task(particleFlowSuperClusterECAL)
+particleFlowSuperClusteringTask = cms.Task(cms.Task(particleFlowSuperClusterECAL),cms.Task(particleFlowDeepSuperClusterECAL))
 particleFlowSuperClusteringSequence = cms.Sequence(particleFlowSuperClusteringTask)
 
 particleFlowSuperClusterHGCal = particleFlowSuperClusterECAL.clone()
@@ -28,15 +29,7 @@ phase2_hgcal.toModify(
 particleFlowSuperClusterHGCalFromMultiCl = particleFlowSuperClusterHGCal.clone()
 phase2_hgcal.toModify(
     particleFlowSuperClusterHGCalFromMultiCl,
-    PFClusters = 'particleFlowClusterHGCalFromMultiCl',
-    useRegression  = True,
-)
-phase2_hgcal.toModify( particleFlowSuperClusterHGCalFromMultiCl.regressionConfig,
-    regressionKeyEE = "superclus_hgcal_mean_offline",
-    uncertaintyKeyEE = "superclus_hgcal_sigma_offline",
-    isPhaseII = True,
-    hgcalRecHits = "particleFlowRecHitHGC"
-            
+    PFClusters = 'particleFlowClusterHGCalFromMultiCl'
 )
 _phase2_hgcal_particleFlowSuperClusteringTask = particleFlowSuperClusteringTask.copy()
 _phase2_hgcal_particleFlowSuperClusteringTask.add(particleFlowSuperClusterHGCal)

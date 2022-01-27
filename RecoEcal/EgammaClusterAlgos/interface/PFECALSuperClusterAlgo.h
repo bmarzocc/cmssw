@@ -13,11 +13,23 @@
 #include "DataFormats/EgammaReco/interface/BasicCluster.h"
 #include "DataFormats/EgammaReco/interface/BasicClusterFwd.h"
 
+#include "DataFormats/EcalDetId/interface/EBDetId.h"
+#include "DataFormats/EcalDetId/interface/EEDetId.h"
+#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
+
+#include "Geometry/CaloTopology/interface/CaloTopology.h"
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
+#include "Geometry/Records/interface/CaloTopologyRecord.h"
+#include "Geometry/CaloTopology/interface/CaloSubdetectorTopology.h"
 
 #include "RecoParticleFlow/PFClusterTools/interface/PFEnergyCalibration.h"
 
 #include "RecoEcal/EgammaClusterAlgos/interface/SCEnergyCorrectorSemiParm.h"
+#include "RecoEcal/EgammaCoreTools/interface/GraphMatrix.h"
+#include "RecoEcal/EgammaCoreTools/interface/EcalClustersGraph.h"
+#include "RecoEcal/EgammaCoreTools/interface/CalibratedPFCluster.h"
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/ESHandle.h"
@@ -50,24 +62,9 @@
 
 class PFECALSuperClusterAlgo {
 public:
-  enum clustering_type { kBOX = 1, kMustache = 2 };
+  enum clustering_type{kBOX=1, kMustache=2, kDeepSC=3};
   enum energy_weight { kRaw, kCalibratedNoPS, kCalibratedTotal };
 
-  // simple class for associating calibrated energies
-  class CalibratedPFCluster {
-  public:
-    CalibratedPFCluster(const edm::Ptr<reco::PFCluster>& p) : cluptr(p) {}
-
-    double energy() const { return cluptr->correctedEnergy(); }
-    double energy_nocalib() const { return cluptr->energy(); }
-    double eta() const { return cluptr->positionREP().eta(); }
-    double phi() const { return cluptr->positionREP().phi(); }
-
-    edm::Ptr<reco::PFCluster> the_ptr() const { return cluptr; }
-
-  private:
-    edm::Ptr<reco::PFCluster> cluptr;
-  };
   typedef std::shared_ptr<CalibratedPFCluster> CalibratedClusterPtr;
   typedef std::vector<CalibratedClusterPtr> CalibratedClusterPtrVector;
 
@@ -132,6 +129,12 @@ private:
 
   const reco::BeamSpot* beamSpot_;
   const ESChannelStatus* channelStatus_;
+  const CaloGeometry *geometry_;
+  const CaloSubdetectorGeometry* ebGeom_;
+  const CaloSubdetectorGeometry* eeGeom_;
+  const CaloSubdetectorGeometry* esGeom_; 
+  const CaloTopology* topology_;
+
   const EcalMustacheSCParameters* mustacheSCParams_;
   const EcalSCDynamicDPhiParameters* scDynamicDPhiParams_;
 
@@ -172,6 +175,8 @@ private:
 
   bool applyCrackCorrections_;
   bool threshIsET_;
+
+  EcalClustersGraph* ecalClusterGraph_;
 
   // OOT photons
   bool isOOTCollection_;
