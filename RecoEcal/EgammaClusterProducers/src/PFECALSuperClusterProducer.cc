@@ -356,6 +356,7 @@ void PFECALSuperClusterProducer::fillDescriptions(edm::ConfigurationDescriptions
   {
     edm::ParameterSetDescription psd0;
     psd0.add<bool>("isHLT", false);
+    psd0.add<bool>("isPhaseII", false); 
     psd0.add<bool>("applySigmaIetaIphiBug", false);
     psd0.add<edm::InputTag>("ecalRecHitsEE", edm::InputTag("ecalRecHit", "EcalRecHitsEE"));
     psd0.add<edm::InputTag>("ecalRecHitsEB", edm::InputTag("ecalRecHit", "EcalRecHitsEB"));
@@ -363,8 +364,18 @@ void PFECALSuperClusterProducer::fillDescriptions(edm::ConfigurationDescriptions
     psd0.add<std::string>("regressionKeyEE", "pfscecal_EECorrection_offline_v2");
     psd0.add<std::string>("uncertaintyKeyEB", "pfscecal_EBUncertainty_offline_v2");
     psd0.add<std::string>("uncertaintyKeyEE", "pfscecal_EEUncertainty_offline_v2");
+    psd0.add<double>("regressionMinEB", 0.2);
+    psd0.add<double>("regressionMaxEB", 2.);
+    psd0.add<double>("regressionMinEE", 0.2);
+    psd0.add<double>("regressionMaxEE", 2.);
+    psd0.add<double>("uncertaintyMinEB", 0.0002);
+    psd0.add<double>("uncertaintyMaxEB", 0.5);
+    psd0.add<double>("uncertaintyMinEE", 0.0002);
+    psd0.add<double>("uncertaintyMaxEE", 0.5);
     psd0.add<edm::InputTag>("vertexCollection", edm::InputTag("offlinePrimaryVertices"));
     psd0.add<double>("eRecHitThreshold", 1.);
+    psd0.add<edm::InputTag>("hgcalRecHits", edm::InputTag(""));
+    psd0.add<double>("hgcalCylinderR", 2.7999999523162842);
     desc1.add<edm::ParameterSetDescription>("regressionConfig", psd0);
   }
   desc1.add<bool>("applyCrackCorrections", false);
@@ -409,6 +420,7 @@ void PFECALSuperClusterProducer::fillDescriptions(edm::ConfigurationDescriptions
   {
     edm::ParameterSetDescription psd0;
     psd0.add<bool>("isHLT", false);
+    psd0.add<bool>("isPhaseII", false); 
     psd0.add<bool>("applySigmaIetaIphiBug", false);
     psd0.add<edm::InputTag>("ecalRecHitsEE", edm::InputTag("ecalRecHit", "EcalRecHitsEE"));
     psd0.add<edm::InputTag>("ecalRecHitsEB", edm::InputTag("ecalRecHit", "EcalRecHitsEB"));
@@ -416,8 +428,18 @@ void PFECALSuperClusterProducer::fillDescriptions(edm::ConfigurationDescriptions
     psd0.add<std::string>("regressionKeyEE", "pfscecal_EECorrection_offline_v2");
     psd0.add<std::string>("uncertaintyKeyEB", "pfscecal_EBUncertainty_offline_v2");
     psd0.add<std::string>("uncertaintyKeyEE", "pfscecal_EEUncertainty_offline_v2");
+    psd0.add<double>("regressionMinEB", 0.2);
+    psd0.add<double>("regressionMaxEB", 2.);
+    psd0.add<double>("regressionMinEE", 0.2);
+    psd0.add<double>("regressionMaxEE", 2.);
+    psd0.add<double>("uncertaintyMinEB", 0.0002);
+    psd0.add<double>("uncertaintyMaxEB", 0.5);
+    psd0.add<double>("uncertaintyMinEE", 0.0002);
+    psd0.add<double>("uncertaintyMaxEE", 0.5);
     psd0.add<edm::InputTag>("vertexCollection", edm::InputTag("offlinePrimaryVertices"));
     psd0.add<double>("eRecHitThreshold", 1.);
+    psd0.add<edm::InputTag>("hgcalRecHits", edm::InputTag(""));
+    psd0.add<double>("hgcalCylinderR", 2.7999999523162842);
     desc2.add<edm::ParameterSetDescription>("regressionConfig", psd0);
   }
   desc2.add<bool>("applyCrackCorrections", false);
