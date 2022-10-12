@@ -11,11 +11,11 @@ def customize_ecalclustering(process):
         )
     )
     process.caloParticles.doHGCAL = False
-    process.caloParticles.allowDifferentSimHitProcesses = True
+    process.caloParticles.allowDifferentSimHitProcesses = False
     process.mix.digitizers.caloParticles = process.caloParticles
-    process.mix.digitizers.mergedtruth.ignoreTracksOutsideVolume = True
-    process.mix.digitizers.mergedtruth.allowDifferentSimHitProcesses = True
-    process.mix.digitizers.mergedtruth.select.signalOnlyTP = False
+    process.mix.digitizers.mergedtruth.ignoreTracksOutsideVolume = False
+    process.mix.digitizers.mergedtruth.allowDifferentSimHitProcesses = False
+    process.mix.digitizers.mergedtruth.select.signalOnlyTP = True
 
     process.PREMIXRAWoutput.outputCommands.append('keep *_*_MergedCaloTruth_*')
     process.PREMIXRAWoutput.outputCommands.append('keep *_*_MergedTrackTruth_*')
