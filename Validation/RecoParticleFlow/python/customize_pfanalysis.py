@@ -3,7 +3,7 @@ import FWCore.ParameterSet.Config as cms
 def customize_ecalclustering(process):
     process.load('SimGeneral.MixingModule.caloTruthProducer_cfi')
     process.caloParticles.simHitCollections = cms.PSet(
-        hcal = cms.VInputTag(cms.InputTag('g4SimHits','HcalHits')),
+        #hcal = cms.VInputTag(cms.InputTag('g4SimHits','HcalHits')),
         ecal = cms.VInputTag(
             cms.InputTag('g4SimHits','EcalHitsEE'),
             cms.InputTag('g4SimHits','EcalHitsEB'),
