@@ -22,6 +22,7 @@
 #include "IOMC/ParticleGuns/interface/RandomtXiGunProducer.h"
 #include "IOMC/ParticleGuns/interface/RandomMultiParticlePGunProducer.h"
 #include "IOMC/ParticleGuns/interface/RandomXiThetaGunProducer.h"
+#include "IOMC/ParticleGuns/interface/MultiRandomParticleFlatPtEtaPhiGunProducer.h"
 // particle gun prototypes
 //
 
@@ -61,3 +62,5 @@ using edm::RandomMultiParticlePGunProducer;
 DEFINE_FWK_MODULE(RandomMultiParticlePGunProducer);
 using edm::RandomXiThetaGunProducer;
 DEFINE_FWK_MODULE(RandomXiThetaGunProducer);
+using edm::MultiRandomParticleFlatPtEtaPhiGunProducer;
+DEFINE_FWK_MODULE(MultiRandomParticleFlatPtEtaPhiGunProducer);
