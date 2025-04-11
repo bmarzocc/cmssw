@@ -245,6 +245,39 @@ photonTable = simpleCandidateFlatTableProducer.clone(
     )
 )
 
+_phoVarsExtra = cms.PSet(
+    r9Frac = Var("r9()",float,doc="Fractional R9 of the supercluster",precision=10),
+    energy = Var("energy",float,doc="energy after regression",precision=10),
+    rawPreshowerEnergy = Var("superCluster.preshowerEnergy",float,doc="energy deposited in preshower",precision=10),
+    seedClusEnergy = Var("superCluster.seed.energy",float,doc="seed cluster energy",precision=10),
+    e5x5 = Var("full5x5_showerShapeVariables.e5x5",float,doc="energy in 5x5",precision=10),
+    superclusterPhi = Var("superCluster().phi()",float,doc="supercluster phi",precision=10),
+    seedClusterEta = Var("superCluster().seed().eta()",float,doc="seed cluster eta",precision=10),
+    seedClusterPhi = Var("superCluster().seed().phi()",float,doc="seed cluster phi",precision=10),
+    sigmaIphiIphiFull5x5 = Var("full5x5_showerShapeVariables().sigmaIphiIphi",float,doc="Full5x5 sigmaIPhiIPhi",precision=10),
+    eMax = Var("full5x5_maxEnergyXtal()",float,doc="Emax",precision=10),
+    e2nd = Var("full5x5_showerShapeVariables.e2nd",float,doc="E2nd",precision=10),
+    eTop = Var("full5x5_showerShapeVariables.eTop",float,doc="Etop",precision=10),
+    eBottom = Var("full5x5_showerShapeVariables.eBottom",float,doc="Ebottom",precision=10),
+    eLeft = Var("full5x5_showerShapeVariables.eLeft",float,doc="Eleft",precision=10),
+    eRight = Var("full5x5_showerShapeVariables.eRight",float,doc="Eright",precision=10),
+    e2x5max = Var("full5x5_showerShapeVariables.e2x5Max",float,doc="energy in 2x5",precision=10),
+    e2x5Top = Var("full5x5_showerShapeVariables.e2x5Top",float,doc="E2x5Top",precision=10),
+    e2x5Bottom = Var("full5x5_showerShapeVariables.e2x5Bottom",float,doc="E2x5Bottom",precision=10),
+    e2x5Left = Var("full5x5_showerShapeVariables.e2x5Left",float,doc="E2x5Left",precision=10),
+    e2x5Right = Var("full5x5_showerShapeVariables.e2x5Right",float,doc="E2x5Right",precision=10),
+    nSaturatedXtals = Var("nSaturatedXtals",int,doc="number of saturated crystals"),
+    numberOfClusters = Var("superCluster.clusters.size",int,doc="number of clusters"),
+    hadTowOverEm = Var("hadTowOverEm",float,doc="single tower based H/E",precision=10),
+    ecalRecHitIsolation = Var("ecalRecHitSumEtConeDR03",float,doc="ECAL RecHit isolation",precision=10),
+    sigmaIetaIetaFrac = Var("sigmaIetaIeta",float,doc="fractional sigmaIetaIeta",precision=10),
+    chargedHadronIso = Var("chargedHadronIso",float,doc="charged hadron Isolation",precision=10),
+    #iEtaMod5 = Var("?superCluster.seedCrysIEtaOrIx>0?(superCluster.seedCrysIEtaOrIx-1)%5:(superCluster.seedCrysIEtaOrIx+1)%5",int,doc="iEtaMod5"),
+    #iEtaMod20 = Var("?abs(superCluster.seedCrysIEtaOrIx)<=25?(superCluster.seedCrysIEtaOrIx-(?superCluster.seedCrysIEtaOrIx>0?+1:-1))%20:(superCluster.seedCrysIEtaOrIx-(?superCluster.seedCrysIEtaOrIx>0?+26:-26))%20",int,doc="iEtaMod20"),
+    #iPhiMod2 = Var("(superCluster.seedCrysIPhiOrIy-1)%2",int,doc="iPhiMod2"),
+    #iPhiMod20 = Var("(superCluster.seedCrysIPhiOrIy-1)%20",int,doc="iPhiMod20"),
+)
+
 
 #these eras need to make the energy correction, hence the "New". Also save only Fall17V2 IDS in Run2, No Run3 Winter22V1 and quadratic iso in Run2 
 run2_egamma.toModify(
@@ -252,7 +285,8 @@ run2_egamma.toModify(
     pt = Var("pt*userFloat('ecalEnergyPostCorrNew')/userFloat('ecalEnergyPreCorrNew')", float, precision=-1, doc="p_{T}"),
     energyErr = Var("userFloat('ecalEnergyErrPostCorrNew')",float,doc="energy error of the cluster from regression",precision=6),
     eCorr = Var("userFloat('ecalEnergyPostCorrNew')/userFloat('ecalEnergyPreCorrNew')",float,doc="ratio of the calibrated energy/miniaod energy"),
-    hoe = Var("hadTowOverEm()",float,doc="H over E (Run2)",precision=8),
+    #hoe = Var("hadTowOverEm()",float,doc="H over E (Run2)",precision=8),
+    hoe = Var("hadronicOverEm()",float,doc="H over E (Run2)",precision=8),
     cutBased = Var(
             "userInt('cutBasedID_Fall17V2_loose')+userInt('cutBasedID_Fall17V2_medium')+userInt('cutBasedID_Fall17V2_tight')",
             "uint8",
@@ -303,7 +337,7 @@ run2_egamma.toModify(
     dEsigmaDown=Var("userFloat('ecalEnergyPostCorrNew') - userFloat('energySigmaDownNew')", float, doc="ecal energy smearing value shifted 1 sigma up", precision=8),
 )
 
-
+photonTable.variables.setValue(_phoVarsExtra.parameters_())
 photonTask = cms.Task(bitmapVIDForPho, bitmapVIDForPhoRun2, isoForPho, hOverEForPho, isoForPhoFall17V2, seedGainPho, slimmedPhotonsWithUserData, finalPhotons)
 
 photonTablesTask = cms.Task(photonTable)
