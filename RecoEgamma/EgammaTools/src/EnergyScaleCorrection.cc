@@ -69,13 +69,14 @@ float EnergyScaleCorrection::smearingSigma(
   const SmearCorrection* smearCorr = getSmearCorr(runnr, et, eta, r9, gainSeed);
 
   if (smearCorr != nullptr)
-    return smearCorr->sigma(nrSigmaRho, nrSigmaPhi);
+    return smearCorr->sigma(et, nrSigmaRho, nrSigmaPhi);
   else
     return kDefaultSmearVal_;
 }
 
 const EnergyScaleCorrection::ScaleCorrection* EnergyScaleCorrection::getScaleCorr(
     unsigned int runnr, double et, double eta, double r9, unsigned int gainSeed) const {
+  eta = fabs(eta);
   // buld the category based on the values of the object
   CorrectionCategory category(runnr, et, eta, r9, gainSeed);
   auto result = scales_.find(category);
@@ -97,6 +98,7 @@ const EnergyScaleCorrection::ScaleCorrection* EnergyScaleCorrection::getScaleCor
 
 const EnergyScaleCorrection::SmearCorrection* EnergyScaleCorrection::getSmearCorr(
     unsigned int runnr, double et, double eta, double r9, unsigned int gainSeed) const {
+  eta = fabs(eta);
   // buld the category based on the values of the object
   CorrectionCategory category(runnr, et, eta, r9, gainSeed);
   auto result = smearings_.find(category);
@@ -125,6 +127,18 @@ void EnergyScaleCorrection::addScale(const std::string& category,
                                      double energyScaleErrGain) {
   CorrectionCategory cat(category, runMin, runMax);  // build the category from the string
   auto result = scales_.equal_range(cat);
+  /*
+  std::cout << "DEBUG" << std::endl;
+  for(auto it = scales_.cbegin(); it != scales_.cend(); ++it)
+    {
+      std::cout << it->first << "\n";
+    }
+  std::cout << "details:" << std::endl;
+  //int a = (*result.first).first;
+  std::cout << (*result.first).first << std::endl;
+  std::cout << (*result.second).first << std::endl;
+  std::cout << cat << std::endl;
+  */
   if (result.first != result.second) {
     throw cms::Exception("ConfigError") << "Category already defined! " << cat;
   }
@@ -425,7 +439,7 @@ EnergyScaleCorrection::CorrectionCategory::CorrectionCategory(const std::string&
       p1 = p2;
       p2 = category.find("-", p1);
       r9Max_ = std::stof(category.substr(p1 + 1, p2 - p1 - 1));
-      if (r9Max_ >= 1.0)
+      if (r9Max_ >= 10.0) //FIemmi: changed this from 1.0 to 10.0
         r9Max_ = std::numeric_limits<float>::max();
     }
   }
