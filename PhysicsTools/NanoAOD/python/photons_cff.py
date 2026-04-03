@@ -96,18 +96,17 @@ seedGainPho = cms.EDProducer("PhotonSeedGainProducer", src = cms.InputTag("slimm
 import RecoEgamma.EgammaTools.calibratedEgammas_cff
 
 calibratedPatPhotonsNano = RecoEgamma.EgammaTools.calibratedEgammas_cff.calibratedPatPhotons.clone(
-    produceCalibratedObjs = False,
-    correctionFile = cms.string("EgammaAnalysis/ElectronTools/data/ScalesSmearings/Run2016_UltraLegacy_preVFP_RunFineEtaR9Gain"),
+    produceCalibratedObjs = False
 )
 
 (run2_egamma_2016 & tracker_apv_vfp30_2016).toModify(
     calibratedPatPhotonsNano,
-    correctionFile = cms.string("EgammaAnalysis/ElectronTools/data/ScalesSmearings/Run2016_UltraLegacy_preVFP_RunFineEtaR9Gain")
+    correctionFile = cms.string("EgammaAnalysis/ElectronTools/data/ScalesSmearings/Run2016_UltraLegacy_preVFP_RunFineEtaR9Gain_v3")
 )
 
 (run2_egamma_2016 & ~tracker_apv_vfp30_2016).toModify(
     calibratedPatPhotonsNano,
-    correctionFile = cms.string("EgammaAnalysis/ElectronTools/data/ScalesSmearings/Run2016_UltraLegacy_postVFP_RunFineEtaR9Gain"),
+    correctionFile = cms.string("EgammaAnalysis/ElectronTools/data/ScalesSmearings/Run2016_UltraLegacy_postVFP_RunFineEtaR9Gain_v1"),
 )
 
 run2_egamma_2017.toModify(
@@ -191,9 +190,9 @@ photonTable = simplePATPhotonFlatTableProducer.clone(
     variables = cms.PSet(P3Vars,
         jetIdx = Var("?hasUserCand('jet')?userCand('jet').key():-1", "int16", doc="index of the associated jet (-1 if none)"),
         electronIdx = Var("?hasUserCand('electron')?userCand('electron').key():-1", "int16", doc="index of the associated electron (-1 if none)"),
+        energy = Var("energy",float,doc="energy from regression",precision=10),
         energyErr = Var("getCorrectedEnergyError('regression2')",float,doc="energy error of the cluster from regression",precision=10),
         energyRaw = Var("superCluster().rawEnergy()",float,doc="raw energy of photon supercluster", precision=10),
-        superclusterEta  = Var("superCluster().eta()",float,doc="supercluster eta",precision=10),
         r9 = Var("full5x5_r9()",float,doc="R9 of the supercluster, calculated with full 5x5 region",precision=10),
         sieie = Var("full5x5_sigmaIetaIeta()",float,doc="sigma_IetaIeta of the supercluster, calculated with full 5x5 region",precision=10),
         sipip = Var("showerShapeVariables().sigmaIphiIphi", float, doc="sigmaIphiIphi of the supercluster", precision=10),
@@ -204,7 +203,7 @@ photonTable = simplePATPhotonFlatTableProducer.clone(
         cutBased = Var(
             "userInt('cutBasedID_loose')+userInt('cutBasedID_medium')+userInt('cutBasedID_tight')",
             "uint8",
-            doc="cut-based ID bitmap, RunIIIWinter22V1, (0:fail, 1:loose, 2:medium, 3:tight)",
+            doc="cut-based ID bitmap, RunIIIWinter22V1: fail ==0, loose >=1 , medium >=2, tight >=3",
         ),
         vidNestedWPBitmap = Var(
             "userInt('VIDNestedWPBitmap')",
@@ -214,6 +213,16 @@ photonTable = simplePATPhotonFlatTableProducer.clone(
         electronVeto = Var("passElectronVeto()",bool,doc="pass electron veto"),
         pixelSeed = Var("hasPixelSeed()",bool,doc="has pixel seed"),
         hasConversionTracks = Var("hasConversionTracks()",bool,doc="Variable specifying if photon has associated conversion tracks (one-legged or two-legged)"),
+        superclusterEta = Var("superCluster().eta()",float,doc="supercluster eta",precision=10),
+        superclusterPhi = Var("superCluster().phi()",float,doc="supercluster phi",precision=10),
+        superclusterNPFClusters = Var("superCluster().clusters().size()","int16",doc="number of pfClusters of the supercluster"),
+        mustacheNPFClusters = Var("?(parentSuperCluster().isNonnull() && parentSuperCluster().isAvailable())?parentSuperCluster().clusters().size():-1","int16",doc="number of pfClusters of the mustache-Supercluster"),
+        mustacheEnergy = Var("?(parentSuperCluster().isNonnull() && parentSuperCluster().isAvailable())?parentSuperCluster().energy():-999.",float,doc="energy of mustache-Supercluster",precision=10),
+        mustacheRawEnergy = Var("?(parentSuperCluster().isNonnull() && parentSuperCluster().isAvailable())?parentSuperCluster().rawEnergy():-999.",float,doc="raw energy of mustache-Supercluster",precision=10),
+        mustacheRawESEnergy = Var("?(parentSuperCluster().isNonnull() && parentSuperCluster().isAvailable())?parentSuperCluster().preshowerEnergy():-999.",float,doc="raw energy of mustache-Supercluster",precision=10),
+        mustacheEta = Var("?(parentSuperCluster().isNonnull() && parentSuperCluster().isAvailable())?parentSuperCluster().eta():-999.",float,doc="eta of mustache-Supercluster",precision=10),
+        mustachePhi = Var("?(parentSuperCluster().isNonnull() && parentSuperCluster().isAvailable())?parentSuperCluster().phi():-999.",float,doc="phi of mustache-Supercluster",precision=10),
+        mustacheR9 = Var("?(parentSuperCluster().isNonnull() && parentSuperCluster().isAvailable())?full5x5_r9()*superCluster().rawEnergy()/parentSuperCluster().rawEnergy():-999.",float,doc="r9 of mustache-Supercluster",precision=10),
         mvaID = Var("userFloat('mvaID')",float,doc="MVA ID score, Winter22V1",precision=10),
         mvaID_WP90 = Var("userInt('mvaID_WP90')",bool,doc="MVA ID WP90, Winter22V1"),
         mvaID_WP80 = Var("userInt('mvaID_WP80')",bool,doc="MVA ID WP80, Winter22V1"),
@@ -222,12 +231,12 @@ photonTable = simplePATPhotonFlatTableProducer.clone(
         ecalPFClusterIso = Var("ecalPFClusterIso()",float,doc="sum pt of ecal clusters, vetoing clusters part of photon", precision=10),
         hcalPFClusterIso = Var("hcalPFClusterIso()",float,doc="sum pt of hcal clusters, vetoing clusters part of photon", precision=10), 
         pfPhoIso03 = Var("photonIso()",float,doc="PF absolute isolation dR=0.3, photon component (uncorrected)"),
-        pfChargedIso = Var("chargedHadronIso()",float,doc="PF absolute isolation dR=0.3, charged component with dxy,dz match to PV", precision=8),        
+        pfChargedIso = Var("chargedHadronIso()",float,doc="PF absolute isolation dR=0.3, charged component with dxy,dz match to PV", precision=10),        
         pfChargedIsoPFPV = Var("chargedHadronPFPVIso()",float,doc="PF absolute isolation dR=0.3, charged component (PF PV only)"),
         pfChargedIsoWorstVtx = Var("chargedHadronWorstVtxIso()",float,doc="PF absolute isolation dR=0.3, charged component (Vertex with largest isolation)"),
         pfRelIso03_chg_quadratic = Var("userFloat('PFIsoChgQuadratic')/pt",float,doc="PF relative isolation dR=0.3, charged hadron component (with quadraticEA*rho*rho + linearEA*rho Winter22V1 corrections)"),
         pfRelIso03_all_quadratic = Var("userFloat('PFIsoAllQuadratic')/pt",float,doc="PF relative isolation dR=0.3, total (with quadraticEA*rho*rho + linearEA*rho Winter22V1 corrections)"),
-        hoe = Var("hadronicOverEm()",float,doc="H over E",precision=8),
+        hoe = Var("hadronicOverEm()",float,doc="H over E",precision=10),
         hoe_Tower = Var("hadTowOverEm()",float,doc="H over E Tower based calculation",precision=8),
         hoe_PUcorr = Var("userFloat('HoverEQuadratic')",float,doc="PU corrected H/E (cone-based with quadraticEA*rho*rho + linearEA*rho Winter22V1 corrections)",precision=8),
         isScEtaEB = Var("abs(superCluster().eta()) < 1.4442",bool,doc="is supercluster eta within barrel acceptance"),
@@ -252,8 +261,9 @@ _phoVarsExtra = cms.PSet(
     rawPreshowerEnergy = Var("superCluster.preshowerEnergy",float,doc="energy deposited in preshower",precision=10),
     seedClusEnergy = Var("superCluster.seed.energy",float,doc="seed cluster energy",precision=10),
     e5x5 = Var("full5x5_showerShapeVariables.e5x5",float,doc="energy in 5x5",precision=10),
-    dEtaSeedClusSuperClus = Var("superCluster.seed.eta-superCluster.position.Eta",float,doc="dEta(seed,SC)",precision=10),
-    dPhiSeedClusSuperClus = Var("deltaPhi(superCluster.seed.phi,superCluster.position.Phi)",float,doc="dPhi(seed,SC)",precision=10),
+    superclusterPhi = Var("superCluster().phi()",float,doc="supercluster phi",precision=10),
+    seedClusterEta = Var("superCluster().seed().eta()",float,doc="seed cluster eta",precision=10),
+    seedClusterPhi = Var("superCluster().seed().phi()",float,doc="seed cluster phi",precision=10),
     sigmaIphiIphiFull5x5 = Var("full5x5_showerShapeVariables().sigmaIphiIphi",float,doc="Full5x5 sigmaIPhiIPhi",precision=10),
     eMax = Var("full5x5_maxEnergyXtal()",float,doc="Emax",precision=10),
     e2nd = Var("full5x5_showerShapeVariables.e2nd",float,doc="E2nd",precision=10),
@@ -283,11 +293,11 @@ run2_egamma.toModify(
     photonTable.variables,
     pt = Var("pt*userFloat('ecalEnergyPostCorrNew')/userFloat('ecalEnergyPreCorrNew')", float, precision=-1, doc="p_{T}"),
     energyErr = Var("userFloat('ecalEnergyErrPostCorrNew')",float,doc="energy error of the cluster from regression",precision=6),
-    eCorr = Var("userFloat('ecalEnergyPostCorrNew')/userFloat('ecalEnergyPreCorrNew')",float,doc="ratio of the calibrated energy/miniaod energy"),
+    ptPreCorr = Var("pt",float,doc="pt of the photon before energy corrections"),
     cutBased = Var(
             "userInt('cutBasedID_Fall17V2_loose')+userInt('cutBasedID_Fall17V2_medium')+userInt('cutBasedID_Fall17V2_tight')",
             "uint8",
-            doc="cut-based ID bitmap, Fall17V2, (0:fail, 1:loose, 2:medium, 3:tight)",
+            doc="cut-based ID bitmap, Fall17V2: fail ==0, loose >=1 , medium >=2, tight >=3",
         ),
     vidNestedWPBitmap = Var(
             "userInt('VIDNestedWPBitmapFall17V2')",
