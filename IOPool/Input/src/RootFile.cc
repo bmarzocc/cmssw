@@ -67,6 +67,7 @@
 #include "TTreeCache.h"
 
 #include <algorithm>
+#include <iostream>
 #include <cassert>
 #include <list>
 
@@ -120,7 +121,82 @@ namespace edm {
       }
     }
   }  // namespace
+  
+  namespace {
+    void translateBranchIDLists(BranchIDLists& branchIDLists,std::map<BranchID::value_type, BranchID::value_type> const& oldToNew) {
+      for (auto& branchIDList : branchIDLists) {
+        for (auto& branchID : branchIDList) {
+          auto it = oldToNew.find(branchID);
+          if (it != oldToNew.end()) {
+            branchID = it->second;
+          }
+        }
+      }
+    }
+  }
 
+  /*namespace {
+    void dumpProductIDMapping(char const* label,
+                            edm::ProductID const& pid,
+                            edm::BranchIDLists const& lists,
+                            edm::BranchListIndexes const& indexes) {
+      std::cout << "\ndumpProductIDMapping: ===== " << label << " =====\n";
+      std::cout << "ProductID = "
+                << pid.processIndex() << ":"
+                << pid.productIndex() << "\n";
+
+      if (!pid.isValid()) {
+        std::cout << "INVALID ProductID\n";
+        return;
+      }
+
+      if (pid.processIndex() == 0) {
+        std::cout << "ERROR: process index is zero\n";
+        return;
+      }
+
+      auto procIndex = pid.processIndex() - 1;
+
+      std::cout << "procIndex = " << procIndex << "\n";
+      std::cout << "indexes.size() = " << indexes.size() << "\n";
+
+      if (static_cast<std::size_t>(procIndex) >= indexes.size()) {
+        std::cout << "ERROR: process index outside BranchListIndexes\n";
+        return;
+      }
+
+      auto blix = indexes[procIndex];
+
+      std::cout << "branchListIndex = " << blix << "\n";
+      std::cout << "lists.size() = " << lists.size() << "\n";
+
+      if (static_cast<std::size_t>(blix) >= lists.size()) {
+        std::cout << "ERROR: branch list index outside BranchIDLists\n";
+        return;
+      }
+
+      auto const& list = lists[blix];
+
+      if (pid.productIndex() == 0) {
+        std::cout << "ERROR: product index is zero\n";
+        return;
+      }
+
+      auto prodIndex = pid.productIndex() - 1;
+
+      std::cout << "productIndex = " << prodIndex << "\n";
+      std::cout << "branch list size = " << list.size() << "\n";
+
+      if (static_cast<std::size_t>(prodIndex) >= list.size()) {
+        std::cout << "ERROR: product index outside BranchIDList\n";
+        return;
+      }
+
+      std::cout << "resolved BranchID = "
+                << list[prodIndex] << "\n";
+    }
+  }*/
+ 
   // This is a helper class for IndexIntoFile.
   class RootFileEventFinder : public IndexIntoFile::EventFinder {
   public:
@@ -493,11 +569,25 @@ namespace edm {
     }
 
     eventTree_.trainCache(BranchTypeToAuxiliaryBranchName(InEvent).c_str());
-
+ 
     // Update the branch id info. This has to be done before validateFile since
     // depending on the file format, the branchIDListHelper_ may have its fixBranchListIndexes call made
     if (inputType == InputType::Primary) {
       branchListIndexesUnchanged_ = branchIDListHelper_->updateFromInput(*branchIDLists_);
+
+/*      auto const& lists = branchIDListHelper_->branchIDLists();
+
+std::cout << "\n===== SEARCHING BOTH BRANCH IDs IN HELPER =====\n";
+
+for (size_t i = 0; i < lists.size(); ++i) {
+  for (size_t j = 0; j < lists[i].size(); ++j) {
+    if (lists[i][j] == 2545498545u || lists[i][j] == 2316773491u) {
+      std::cout << "FOUND BranchID "
+                << lists[i][j]
+                << " at list[" << i << "][" << j << "]\n";
+    }
+  }
+}*/
     }
 
     validateFile(inputType, usingGoToEvent);
@@ -532,26 +622,92 @@ namespace edm {
     {
       ProductRegistry::ProductList const& prodList = inputProdDescReg.productList();
       for (auto const& product : prodList) {
-        BranchDescription const& prod = product.second;
-        std::string newFriendlyName = friendlyname::friendlyName(prod.className());
-        if (newFriendlyName == prod.friendlyClassName()) {
-          newReg->copyProduct(prod);
-        } else {
-          if (fileFormatVersion().splitProductIDs()) {
-            throw Exception(errors::UnimplementedFeature)
-                << "Cannot change friendly class name algorithm without more development work\n"
-                << "to update BranchIDLists and ThinnedAssociationsHelper.  Contact the framework group.\n";
-          }
-          BranchDescription newBD(prod);
-          newBD.updateFriendlyClassName();
-          newReg->copyProduct(newBD);
-          newBranchToOldBranch_.insert(std::make_pair(newBD.branchName(), prod.branchName()));
-        }
-      }
+          BranchDescription const& prod = product.second;
 
+  	  BranchDescription newBD(prod);
+  	  
+  	  std::string const oldBranchName = newBD.branchName();
+  	  BranchID const oldBranchID = newBD.branchID();
+
+  	  if (newBD.processName() == "GEN") {
+    	      newBD.setProcessName("inputSTEP1");
+              newBD.updateBranchNameAndID();
+  	  } else if (newBD.processName() == "SIM") {
+    	         newBD.setProcessName("inputSTEP2");
+                 newBD.updateBranchNameAndID();
+  	  } else if (newBD.processName() == "HLT") {
+              newBD.setProcessName("inputSTEP3");
+              newBD.updateBranchNameAndID();
+  	  } else if (newBD.processName() == "RECO") {
+              newBD.setProcessName("inputSTEP4");
+              newBD.updateBranchNameAndID();
+  	  } else if (newBD.processName() == "PAT") {
+              newBD.setProcessName("inputSTEP5");
+              newBD.updateBranchNameAndID();
+  	  }
+
+          std::string const newFriendlyName =
+          friendlyname::friendlyName(newBD.className());
+
+          if (newFriendlyName != newBD.friendlyClassName()) {
+              if (fileFormatVersion().splitProductIDs()) {
+                  throw Exception(errors::UnimplementedFeature)
+                  << "Cannot change friendly class name algorithm without more development work\n"
+                  << "to update BranchIDLists and ThinnedAssociationsHelper.  Contact the framework group.\n";
+              }
+
+              newBD.updateFriendlyClassName();
+          }
+
+          // Record the final old -> new BranchID translation.
+          if (newBD.branchID() != oldBranchID) {
+             oldBranchIDToNewBranchID_.emplace(oldBranchID.id(), newBD.branchID().id());
+          }
+
+          // Record the final new branch name -> old physical ROOT branch name.
+          if (newBD.branchName() != oldBranchName) {
+             newBranchToOldBranch_.insert(std::make_pair(newBD.branchName(), oldBranchName));
+          }
+
+          newReg->copyProduct(newBD);
+      }
+     
       dropOnInputAndReorder(
           *newReg, productSelectorRules, dropDescendants, inputType, storedProcessBlockHelper, processBlockHelper);
 
+      // The product registry now contains the translated BranchIDs.
+      // Translate the BranchIDLists metadata from the old file IDs to the new IDs.
+      BranchIDLists translatedBranchIDLists = *branchIDLists_;
+      translateBranchIDLists(translatedBranchIDLists, oldBranchIDToNewBranchID_);
+      branchIDLists_ = std::make_shared<BranchIDLists>(std::move(translatedBranchIDLists));  
+      // IMPORTANT: propagate the translated lists into the helper
+      branchIDListHelper_->updateFromInput(*branchIDLists_);
+   /*   std::cout
+    << "\n===== ROOTFILE TRANSLATED BRANCHIDLISTS =====\n"
+    << "branchIDLists_ address = "
+    << branchIDLists_.get()
+    << "\n";
+
+for (size_t i = 0; i < branchIDLists_->size(); ++i) {
+
+  for (size_t j = 0; j < (*branchIDLists_)[i].size(); ++j) {
+
+    if ((*branchIDLists_)[i][j] == 2545498545u ||
+        (*branchIDLists_)[i][j] == 2316773491u) {
+
+      std::cout
+          << "FOUND ID "
+          << (*branchIDLists_)[i][j]
+          << " at ["
+          << i << "]["
+          << j << "]\n";
+    }
+  }
+}*/
+
+      // Translate the thinned-association metadata using the same old -> new ID map.
+      fileThinnedAssociationsHelper_->translateBranchIDs(oldBranchIDToNewBranchID_);
+  
       if (inputType == InputType::SecondaryFile) {
         thinnedAssociationsHelper->updateFromSecondaryInput(*fileThinnedAssociationsHelper_,
                                                             *associationsFromSecondary);
@@ -1364,6 +1520,7 @@ namespace edm {
       evtAux.setProcessHistoryID(history_->processHistoryID());
       eventSelectionIDs.swap(history_->eventSelectionIDs());
       branchListIndexes.swap(history_->branchListIndexes());
+
     } else if (fileFormatVersion().noMetaDataTrees()) {
       // Current format
       EventSelectionIDVector* pESV = &eventSelectionIDs;

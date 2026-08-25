@@ -399,6 +399,7 @@ namespace edm {
     InputSource::ProcessingMode processingMode_;
     edm::propagate_const<RunHelperBase*> runHelper_;
     std::map<std::string, std::string> newBranchToOldBranch_;
+    std::map<BranchID::value_type, BranchID::value_type> oldBranchIDToNewBranchID_;
     edm::propagate_const<TTree*> eventHistoryTree_;  // backward compatibility
     EventToProcessBlockIndexes eventToProcessBlockIndexes_;
     edm::propagate_const<TBranch*> eventToProcessBlockIndexesBranch_;

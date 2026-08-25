@@ -26,6 +26,7 @@
 #include "FWCore/ServiceRegistry/interface/ModuleCallingContext.h"
 
 #include <algorithm>
+#include <iostream>
 #include <cassert>
 #include <limits>
 #include <memory>
@@ -224,11 +225,15 @@ namespace edm {
 
   BranchID EventPrincipal::pidToBid(ProductID const& pid) const {
     if (!pid.isValid()) {
-      throw Exception(errors::ProductNotFound, "InvalidID") << "get by product ID: invalid ProductID supplied\n";
+      throw Exception(errors::ProductNotFound, "InvalidID")
+          << "get by product ID: invalid ProductID supplied\n";
     }
-    return productIDToBranchID(pid, branchIDListHelper_->branchIDLists(), branchListIndexes_);
-  }
 
+    return productIDToBranchID(pid,
+                             branchIDListHelper_->branchIDLists(),
+                             branchListIndexes_);
+  }
+   
   ProductID EventPrincipal::branchIDToProductID(BranchID const& bid) const {
     return edm::branchIDToProductID(bid, *branchIDListHelper_, branchListIndexToProcessIndex_);
   }
@@ -253,7 +258,28 @@ namespace edm {
 
   BasicHandle EventPrincipal::getByProductID(ProductID const& pid) const {
     BranchID bid = pidToBid(pid);
+    //std::cout << "\neventPrincipal: ===== getByProductID DIAGNOSTIC =====\n";
+    //std::cout << "ProductID = "
+    //        << pid.processIndex() << ":"
+    //        << pid.productIndex() << "\n";
+    //std::cout << "resolved BranchID = " << bid << "\n"; 
     ConstProductResolverPtr const phb = getProductResolver(bid);
+    //std::cout << "getProductResolver returned: "
+    //        << (phb ? "NON-NULL" : "NULL") << "\n";
+
+    if (phb != nullptr) {
+    //auto const& bd = phb->branchDescription();
+
+    /*std::cout << "branchDescription:\n";
+    std::cout << "  branchID = " << bd.branchID() << "\n";
+    std::cout << "  branchName = " << bd.branchName() << "\n";
+    std::cout << "  module = " << bd.moduleLabel() << "\n";
+    std::cout << "  instance = " << bd.productInstanceName() << "\n";
+    std::cout << "  process = " << bd.processName() << "\n";
+    std::cout << "  class = " << bd.unwrappedType() << "\n";
+    std::cout << "  present = " << bd.present() << "\n";
+    std::cout << "  dropped = " << bd.dropped() << "\n";*/
+    }
     if (phb == nullptr) {
       return BasicHandle(makeHandleExceptionFactory([pid]() -> std::shared_ptr<cms::Exception> {
         std::shared_ptr<cms::Exception> whyFailed(std::make_shared<Exception>(errors::ProductNotFound, "InvalidID"));

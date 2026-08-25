@@ -151,6 +151,12 @@ namespace edm {
       branchID_.setID(brName);
     }
   }
+  
+  void BranchDescription::updateBranchNameAndID() {
+    transient_.branchName_.clear();
+    branchID_ = BranchID();
+    initBranchName();
+  }
 
   void BranchDescription::initFromDictionary() {
     if (bool(wrappedType())) {
@@ -296,6 +302,12 @@ namespace edm {
     friendlyClassName_ = friendlyname::friendlyName(fullClassName());
     clearBranchName();
     initBranchName();
+  }
+  
+  void BranchDescription::updateProcessName(std::string const& newProcessName) {
+    processName_ = newProcessName;
+    clearBranchName();
+    initBranchName(); 
   }
 
   bool operator<(BranchDescription const& a, BranchDescription const& b) {

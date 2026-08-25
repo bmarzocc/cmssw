@@ -62,6 +62,7 @@ namespace edm {
     }
 
     void initBranchName();
+    void updateBranchNameAndID();
 
     void initFromDictionary();
 
@@ -71,6 +72,7 @@ namespace edm {
 
     std::string const& moduleLabel() const { return moduleLabel_; }
     std::string const& processName() const { return processName_; }
+    void setProcessName(std::string const& processName) { processName_ = processName; }
     BranchID const& branchID() const { return branchID_; }
     BranchID const& aliasForBranchID() const { return aliasForBranchID_; }
     bool isAlias() const { return aliasForBranchID_.isValid() && produced(); }
@@ -129,6 +131,7 @@ namespace edm {
     void setIsMergeable(bool v) { transient_.isMergeable_ = v; }
 
     void updateFriendlyClassName();
+    void updateProcessName(std::string const& newProcessName);
 
     void initializeTransients() { transient_.reset(); }
 

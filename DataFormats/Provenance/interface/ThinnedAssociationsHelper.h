@@ -60,6 +60,8 @@ namespace edm {
     void requireMatch(ThinnedAssociationBranches const& input) const;
 
     void updateFromPrimaryInput(ThinnedAssociationsHelper const&);
+    
+    void translateBranchIDs(std::map<BranchID::value_type, BranchID::value_type> const& oldToNew);
 
     void updateFromSecondaryInput(ThinnedAssociationsHelper const&,
                                   std::vector<BranchID> const& associationsFromSecondary);

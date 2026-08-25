@@ -286,6 +286,19 @@ namespace edm {
       requireMatch(inputEntry);
     }
   }
+  
+  void ThinnedAssociationsHelper::translateBranchIDs(std::map<BranchID::value_type, BranchID::value_type> const& oldToNew) {
+    for (auto& association : vThinnedAssociationBranches_) {
+      auto translate = [&oldToNew](BranchID const& oldID) {
+        auto it = oldToNew.find(oldID.id());
+        return it == oldToNew.end() ? oldID : BranchID(it->second);
+      };
+      association = ThinnedAssociationBranches(translate(association.parent()),
+                                              translate(association.association()),
+                                              translate(association.thinned()),
+                                              association.isSlimmed());
+    }
+  }
 
   void ThinnedAssociationsHelper::updateFromSecondaryInput(ThinnedAssociationsHelper const& helper,
                                                            std::vector<BranchID> const& associationsFromSecondary) {
